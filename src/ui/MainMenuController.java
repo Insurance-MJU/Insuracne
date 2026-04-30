@@ -47,7 +47,7 @@ public class MainMenuController {
             System.out.println("  8. 위험성을 분석한다       (UW-02)");
             System.out.println(" ── 보상 관리 ───────────────────");
             System.out.println("  9. 신규 사고 접수 내역     (CL-01)");
-            System.out.println(" 10. 손해액을 산정한다       (CL-02)");
+            System.out.println(" 10. 손해액 산정             (CL-02)");
             System.out.println(" 11. 손해를 조사한다         (CL-03)");
             System.out.println(" 12. 보험금을 지급한다       (CL-04)");
         }
