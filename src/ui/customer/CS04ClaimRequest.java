@@ -1,9 +1,9 @@
 package ui.customer;
 
 import domain.Accident;
+import domain.Contract;
 import infra.Context;
 import infra.repository.AccidentRepository;
-import infra.repository.ContractRepository;
 import java.util.Scanner;
 
 public class CS04ClaimRequest {
@@ -43,7 +43,7 @@ public class CS04ClaimRequest {
         }
 
         // A1: 청구 대상 계약 미선택 처리
-        ContractRepository.ContractInfo selectedContract = new CS05ContractInquiry().runAsInclude();
+        Contract selectedContract = new CS05ContractInquiry().runAsInclude();
         if (selectedContract == null) {
             System.out.println("\n[경고] 대상 보험 계약은 필수 선택 사항입니다. 대상을 리스트에 추가해 주세요.");
             returnToMenu();
@@ -94,7 +94,7 @@ public class CS04ClaimRequest {
             "보험금 청구", accidentPlace, accidentDetail,
             doc1 + "," + doc2,
             selectedContract.getContractId(),
-            selectedContract.getCoverages(), "",
+            selectedContract.getCoveragesDescription(), "",
             selectedContract.getCarNumber(),
             "미처리"
         );

@@ -20,4 +20,12 @@ public class Party {
     public String getPhone() { return phone; }
     public Role getRole() { return role; }
     public String getSsn() { return ssn; }
+
+    public void setAddress(String v) { this.address = v; }
+    public void setBirthDate(Date v) { this.birthDate = v; }
+    public void setName(String v) { this.name = v; }
+    public void setPartyId(String v) { this.partyId = v; }
+    public void setPhone(String v) { this.phone = v; }
+    public void setRole(Role v) { this.role = v; }
+    public void setSsn(String v) { this.ssn = v; }
 }

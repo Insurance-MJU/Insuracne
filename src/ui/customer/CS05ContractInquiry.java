@@ -1,5 +1,6 @@
 package ui.customer;
 
+import domain.Contract;
 import infra.Context;
 import infra.repository.ContractRepository;
 import java.util.List;
@@ -18,14 +19,14 @@ public class CS05ContractInquiry {
         System.out.println();
     }
 
-    public ContractRepository.ContractInfo runAsInclude() {
+    public Contract runAsInclude() {
         System.out.println("\n========================================");
         System.out.println(" CS-05: 보험계약을 조회한다");
         System.out.println("========================================");
         return runFlow();
     }
 
-    private ContractRepository.ContractInfo runFlow() {
+    private Contract runFlow() {
         // Step 1~2: 본인 인증
         System.out.println("\n[본인 인증]");
         System.out.println(" 1. 공동인증서  2. 간편비밀번호  3. 휴대폰 인증");
@@ -61,8 +62,7 @@ public class CS05ContractInquiry {
         System.out.println("[조회]");
 
         // Step 5: 레포지토리에서 계약 목록 조회 및 출력
-        List<ContractRepository.ContractInfo> contracts =
-            ContractRepository.findByCondition(holderName, periodChoice, statusChoice);
+        List<Contract> contracts = ContractRepository.findByCondition(holderName, periodChoice, statusChoice);
 
         System.out.println("\n[보험 계약 목록]");
         System.out.println("------------------------------------------------------------");
@@ -71,9 +71,9 @@ public class CS05ContractInquiry {
         if (contracts.isEmpty()) {
             System.out.println("  조회된 계약이 없습니다.");
         } else {
-            for (ContractRepository.ContractInfo c : contracts) {
+            for (Contract c : contracts) {
                 System.out.printf(" %-15s %-35s %-8s%n",
-                    c.getPolicyNo(), c.getProductName(), c.getStatus());
+                    c.getPolicyNo(), c.getProductId(), c.getStatusLabel());
             }
         }
         System.out.println("------------------------------------------------------------");
@@ -85,7 +85,7 @@ public class CS05ContractInquiry {
         String policyNo = sc.nextLine().trim();
         if ("0".equals(policyNo)) return null;
 
-        ContractRepository.ContractInfo selected = contracts.stream()
+        Contract selected = contracts.stream()
             .filter(c -> c.getPolicyNo().equals(policyNo))
             .findFirst().orElse(null);
 
@@ -97,12 +97,12 @@ public class CS05ContractInquiry {
         // Step 7: 계약 상세 내역
         System.out.println("\n[계약 상세 내역 - " + selected.getPolicyNo() + "]");
         System.out.println("------------------------------------------------------------");
-        System.out.println(" 계약일시   : " + selected.getIssueDate());
-        System.out.printf(" 보험료     : %,d원/년%n", selected.getPremiumAmount());
-        System.out.println(" 담보내용   : " + selected.getCoverages());
-        System.out.println(" 특약목록   : " + selected.getRiders());
+        System.out.println(" 계약일시   : " + selected.getIssueDateString());
+        System.out.printf(" 보험료     : %,d원/년%n", selected.getPremium().getAmount());
+        System.out.println(" 담보내용   : " + selected.getCoveragesDescription());
+        System.out.println(" 특약목록   : " + selected.getRidersDescription());
         System.out.println(" 차량번호   : " + selected.getCarNumber());
-        System.out.println(" 계약상태   : " + selected.getStatus());
+        System.out.println(" 계약상태   : " + selected.getStatusLabel());
         System.out.println("------------------------------------------------------------");
 
         // Step 8~9: 청구 버튼
