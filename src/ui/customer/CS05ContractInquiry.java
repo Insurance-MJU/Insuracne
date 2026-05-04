@@ -1,6 +1,8 @@
 package ui.customer;
 
 import infra.Context;
+import infra.repository.ContractRepository;
+import java.util.List;
 import java.util.Scanner;
 
 public class CS05ContractInquiry {
@@ -16,14 +18,14 @@ public class CS05ContractInquiry {
         System.out.println();
     }
 
-    public boolean runAsInclude() {
+    public ContractRepository.ContractInfo runAsInclude() {
         System.out.println("\n========================================");
         System.out.println(" CS-05: 보험계약을 조회한다");
         System.out.println("========================================");
         return runFlow();
     }
 
-    private boolean runFlow() {
+    private ContractRepository.ContractInfo runFlow() {
         // Step 1~2: 본인 인증
         System.out.println("\n[본인 인증]");
         System.out.println(" 1. 공동인증서  2. 간편비밀번호  3. 휴대폰 인증");
@@ -38,7 +40,7 @@ public class CS05ContractInquiry {
         }
 
         System.out.print(" 이름: ");
-        sc.nextLine();
+        String holderName = sc.nextLine().trim();
         System.out.print(" 주민등록번호 (예: 020101-3******): ");
         sc.nextLine();
         System.out.print(" 휴대전화번호 (예: 010-1234-5678): ");
@@ -52,18 +54,28 @@ public class CS05ContractInquiry {
         System.out.println("\n[보험계약 조회]");
         System.out.println(" 조회 기간: 1. 전체  2. 1년  3. 3년");
         System.out.print(" 선택: ");
-        sc.nextLine();
+        String periodChoice = sc.nextLine().trim();
         System.out.println(" 계약 상태: 1. 유지 중  2. 만기  3. 해지");
         System.out.print(" 선택: ");
-        sc.nextLine();
+        String statusChoice = sc.nextLine().trim();
         System.out.println("[조회]");
 
-        // Step 5: 계약 목록 출력
+        // Step 5: 레포지토리에서 계약 목록 조회 및 출력
+        List<ContractRepository.ContractInfo> contracts =
+            ContractRepository.findByCondition(holderName, periodChoice, statusChoice);
+
         System.out.println("\n[보험 계약 목록]");
         System.out.println("------------------------------------------------------------");
         System.out.printf(" %-15s %-35s %-8s%n", "증권번호", "상품명", "상태");
         System.out.println("------------------------------------------------------------");
-        System.out.printf(" %-15s %-35s %-8s%n", "IN-2026-001", "MZ세대 다이렉트 개인용자동차보험", "유지중");
+        if (contracts.isEmpty()) {
+            System.out.println("  조회된 계약이 없습니다.");
+        } else {
+            for (ContractRepository.ContractInfo c : contracts) {
+                System.out.printf(" %-15s %-35s %-8s%n",
+                    c.getPolicyNo(), c.getProductName(), c.getStatus());
+            }
+        }
         System.out.println("------------------------------------------------------------");
 
         // E1: 시스템 내부 오류 (정상 처리)
@@ -71,17 +83,26 @@ public class CS05ContractInquiry {
         // Step 6: 계약 선택
         System.out.print("\n조회할 증권번호를 입력하세요 (0: 취소): ");
         String policyNo = sc.nextLine().trim();
-        if ("0".equals(policyNo)) return false;
+        if ("0".equals(policyNo)) return null;
+
+        ContractRepository.ContractInfo selected = contracts.stream()
+            .filter(c -> c.getPolicyNo().equals(policyNo))
+            .findFirst().orElse(null);
+
+        if (selected == null) {
+            System.out.println("[오류] 해당 증권번호를 찾을 수 없습니다.");
+            return null;
+        }
 
         // Step 7: 계약 상세 내역
-        System.out.println("\n[계약 상세 내역 - " + policyNo + "]");
+        System.out.println("\n[계약 상세 내역 - " + selected.getPolicyNo() + "]");
         System.out.println("------------------------------------------------------------");
-        System.out.println(" 계약일시   : 2026-04-01");
-        System.out.println(" 보험료     : 2,509,200원/년");
-        System.out.println(" 담보내용   : 대인배상I, 대인배상II, 대물배상");
-        System.out.println(" 특약목록   : 마일리지 특약");
-        System.out.println(" 차량번호   : 64마0866");
-        System.out.println(" 계약상태   : 유지중");
+        System.out.println(" 계약일시   : " + selected.getIssueDate());
+        System.out.printf(" 보험료     : %,d원/년%n", selected.getPremiumAmount());
+        System.out.println(" 담보내용   : " + selected.getCoverages());
+        System.out.println(" 특약목록   : " + selected.getRiders());
+        System.out.println(" 차량번호   : " + selected.getCarNumber());
+        System.out.println(" 계약상태   : " + selected.getStatus());
         System.out.println("------------------------------------------------------------");
 
         // Step 8~9: 청구 버튼
@@ -89,8 +110,8 @@ public class CS05ContractInquiry {
         String confirm = sc.nextLine().trim();
         if (confirm.equalsIgnoreCase("Y")) {
             System.out.println("\n청구 프로세스로 이동합니다.");
-            return true;
+            return selected;
         }
-        return false;
+        return null;
     }
 }

@@ -1,6 +1,9 @@
 package ui.customer;
 
+import domain.Accident;
 import infra.Context;
+import infra.repository.AccidentRepository;
+import infra.repository.ContractRepository;
 import java.util.Scanner;
 
 public class CS04ClaimRequest {
@@ -18,7 +21,7 @@ public class CS04ClaimRequest {
         System.out.println("\n[본인 인증 수단 선택]");
         System.out.println(" 1. 공동인증서  2. 간편비밀번호  3. 휴대폰 인증");
         System.out.print(" 인증 수단 선택: ");
-        String authMethod = sc.nextLine().trim();
+        sc.nextLine();
 
         System.out.print(" 이름: ");
         String authName = sc.nextLine().trim();
@@ -40,8 +43,8 @@ public class CS04ClaimRequest {
         }
 
         // A1: 청구 대상 계약 미선택 처리
-        boolean contractSelected = new CS05ContractInquiry().runAsInclude();
-        if (!contractSelected) {
+        ContractRepository.ContractInfo selectedContract = new CS05ContractInquiry().runAsInclude();
+        if (selectedContract == null) {
             System.out.println("\n[경고] 대상 보험 계약은 필수 선택 사항입니다. 대상을 리스트에 추가해 주세요.");
             returnToMenu();
             return;
@@ -84,8 +87,19 @@ public class CS04ClaimRequest {
             return;
         }
 
-        // Step 12: 청구 완료
-        String accNo = "ACC-" + String.format("%05d", System.currentTimeMillis() % 100000);
+        // Step 12: AccidentRepository에 사고 저장 후 청구 완료
+        String accNo = AccidentRepository.nextId();
+        Accident newAccident = new Accident(
+            accNo, accidentDate, authName, "",
+            "보험금 청구", accidentPlace, accidentDetail,
+            doc1 + "," + doc2,
+            selectedContract.getContractId(),
+            selectedContract.getCoverages(), "",
+            selectedContract.getCarNumber(),
+            "미처리"
+        );
+        AccidentRepository.save(newAccident);
+
         System.out.println("\n[보험금 청구 완료]");
         System.out.println("------------------------------------------------------------");
         System.out.println(" 접수 번호   : " + accNo);
