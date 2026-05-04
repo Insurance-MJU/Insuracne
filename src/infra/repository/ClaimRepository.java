@@ -15,7 +15,7 @@ public class ClaimRepository {
     private static final List<DamageInvestigation> INVESTIGATION_STORE = new ArrayList<>();
 
     static {
-        ACCIDENT_STORE.add(new Accident(
+        Accident a1 = new Accident(
             "ACC-2026-001", "2026-04-19 09:32",
             "홍길동", "010-1234-5678",
             "자동차 대물 사고",
@@ -26,8 +26,12 @@ public class ClaimRepository {
             "자동차 대물", "2,000만원",
             "12가 3456 (현대 소나타)",
             "미처리"
-        ));
-        ACCIDENT_STORE.add(new Accident(
+        );
+        a1.setPersonalInjuryLimit("1,000만원");
+        a1.setExpectedRepairCost("850,000원");
+        ACCIDENT_STORE.add(a1);
+
+        Accident a2 = new Accident(
             "ACC-2026-002", "2026-04-19 11:15",
             "김철수", "010-9876-5432",
             "차량 파손",
@@ -38,8 +42,12 @@ public class ClaimRepository {
             "자기차량손해", "3,000만원",
             "34나 5678 (기아 K5)",
             "미처리"
-        ));
-        ACCIDENT_STORE.add(new Accident(
+        );
+        a2.setPersonalInjuryLimit("2,000만원");
+        a2.setExpectedRepairCost("1,200,000원");
+        ACCIDENT_STORE.add(a2);
+
+        Accident a3 = new Accident(
             "ACC-2026-003", "2026-04-18 14:20",
             "이영희", "010-5555-1234",
             "차량 전손",
@@ -50,7 +58,10 @@ public class ClaimRepository {
             "자기차량손해", "5,000만원",
             "56다 9012 (현대 그랜저)",
             "처리중"
-        ));
+        );
+        a3.setPersonalInjuryLimit("3,000만원");
+        a3.setExpectedRepairCost("3,500,000원");
+        ACCIDENT_STORE.add(a3);
 
         Claim c = new Claim(
             "CL-00001", "ACC-2026-003",

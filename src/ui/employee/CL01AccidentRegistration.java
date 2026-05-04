@@ -4,6 +4,7 @@ import domain.Accident;
 import domain.Claim;
 import infra.Context;
 import infra.repository.ClaimRepository;
+import infra.repository.EmployeeRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -110,8 +111,16 @@ public class CL01AccidentRegistration {
         System.out.println("------------------------------------------------------------");
         System.out.printf("%-15s %-14s %-10s%n", "직원 번호", "직원명", "미결 건수");
         System.out.println("------------------------------------------------------------");
-        System.out.printf("%-15s %-14s %-10s%n", "EMP-1023", "이현수", "2건");
-        System.out.printf("%-15s %-14s %-10s%n", "EMP-1045", "박지영", "4건");
+        List<EmployeeRepository.FieldInvestigator> investigators =
+            EmployeeRepository.findByRegionAndSpecialty(regionCode, specialty);
+        if (investigators.isEmpty()) {
+            System.out.println("  해당 조건에 맞는 현장조사역이 없습니다.");
+        } else {
+            for (EmployeeRepository.FieldInvestigator emp : investigators) {
+                System.out.printf("%-15s %-14s %-10s%n",
+                    emp.getEmployeeId(), emp.getName(), emp.getOpenCaseCount() + "건");
+            }
+        }
         System.out.println("------------------------------------------------------------");
 
         // Step 9: 담당자 배당 확정

@@ -13,7 +13,9 @@ public class Accident {
     private String contractId;
     private String coverageDescription;
     private String coverageLimit;
+    private String personalInjuryLimit;
     private String vehicleInfo;
+    private String expectedRepairCost;
 
     public enum AccidentType {}
     public enum SeverityLevel {}
@@ -55,7 +57,9 @@ public class Accident {
     public String getContractId() { return contractId; }
     public String getCoverageDescription() { return coverageDescription; }
     public String getCoverageLimit() { return coverageLimit; }
+    public String getPersonalInjuryLimit() { return personalInjuryLimit; }
     public String getVehicleInfo() { return vehicleInfo; }
+    public String getExpectedRepairCost() { return expectedRepairCost; }
 
     public void setAccidentId(String v) { this.accidentId = v; }
     public void setAccidentDate(String v) { this.accidentDate = v; }
@@ -69,5 +73,7 @@ public class Accident {
     public void setContractId(String v) { this.contractId = v; }
     public void setCoverageDescription(String v) { this.coverageDescription = v; }
     public void setCoverageLimit(String v) { this.coverageLimit = v; }
+    public void setPersonalInjuryLimit(String v) { this.personalInjuryLimit = v; }
     public void setVehicleInfo(String v) { this.vehicleInfo = v; }
+    public void setExpectedRepairCost(String v) { this.expectedRepairCost = v; }
 }

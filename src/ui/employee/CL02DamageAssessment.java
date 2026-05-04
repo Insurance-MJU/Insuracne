@@ -10,8 +10,6 @@ import java.util.Scanner;
 public class CL02DamageAssessment {
     private final Scanner sc = Context.getInstance().scanner();
 
-    private static final int LIMIT_PROPERTY = 2000; // 대물 한도 (만원)
-
     public void run() {
         System.out.println("\n[CL-02] 손해액을 산정한다");
         System.out.println("========================================");
@@ -57,11 +55,13 @@ public class CL02DamageAssessment {
             new CL03DamageInvestigation().run();
 
             // Step 6: 보상 한도액 출력 (레포지토리 데이터 반영)
-            String coverageLimit = (accident != null) ? accident.getCoverageLimit() : LIMIT_PROPERTY + "만원";
+            String personalLimit  = (accident != null && accident.getPersonalInjuryLimit() != null)
+                ? accident.getPersonalInjuryLimit() : "1,000만원";
+            String coverageLimit  = (accident != null) ? accident.getCoverageLimit() : "2,000만원";
 
             System.out.println("\n[ 보상 한도액 ]");
             System.out.println("------------------------------------------------------------");
-            System.out.println("  대인 한도 : 1,000만원");
+            System.out.println("  대인 한도 : " + personalLimit);
             System.out.println("  대물 한도 : " + coverageLimit);
             System.out.println("------------------------------------------------------------");
 
@@ -84,9 +84,10 @@ public class CL02DamageAssessment {
             }
 
             // E1: 대물 한도 초과
-            if (settlement > LIMIT_PROPERTY) {
+            int limitManwon = parseCoverageLimitManwon(accident);
+            if (settlement > limitManwon) {
                 System.out.println("\n[오류] >>> 최종 합의금 <<< 입력된 합의금 한도 값이 허용 범위를 초과하였습니다.");
-                System.out.println("       대물 한도(" + LIMIT_PROPERTY + "만원) 이하로 입력해 주세요.\n");
+                System.out.println("       대물 한도(" + limitManwon + "만원) 이하로 입력해 주세요.\n");
                 continue;
             }
 
@@ -139,5 +140,15 @@ public class CL02DamageAssessment {
         System.out.print("\nEnter를 누르면 메인 메뉴로 돌아갑니다...");
         sc.nextLine();
         System.out.println();
+    }
+
+    /** "2,000만원" 같은 문자열에서 숫자(2000)만 추출 */
+    private static int parseCoverageLimitManwon(domain.Accident accident) {
+        if (accident == null || accident.getCoverageLimit() == null) return 2000;
+        try {
+            return Integer.parseInt(accident.getCoverageLimit().replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException e) {
+            return 2000;
+        }
     }
 }

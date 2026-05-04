@@ -62,7 +62,8 @@ public class CL03DamageInvestigation {
             }
 
             // Step 4: 레포지토리 데이터 기반 보상 한도 범위 출력
-            String expectedRepairCost = "800,000원";
+            String expectedRepairCost = (accident != null && accident.getExpectedRepairCost() != null)
+                ? accident.getExpectedRepairCost() : "미산정";
             String compensationLimit = (accident != null) ? accident.getCoverageLimit() : "1,000만원";
 
             System.out.println("\n[ 보상 한도 범위 ]");
