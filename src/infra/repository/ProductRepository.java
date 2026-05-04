@@ -1,4 +1,4 @@
-package infra;
+package infra.repository;
 
 import domain.*;
 import java.text.SimpleDateFormat;
@@ -64,7 +64,7 @@ public class ProductRepository {
             "  티맵 안전운전 점수에 따라 보험료를 할인합니다.\n"
         );
 
-        personal.setDocuments(Arrays.asList(doc1, doc2));
+        personal.setDocuments(new ArrayList<>(Arrays.asList(doc1, doc2)));
         STORE.add(personal);
 
         // ── 2. 업무용 (판매중) ──────────────────────────────────
@@ -100,6 +100,23 @@ public class ProductRepository {
         commercial.setRiders(new ArrayList<>());
         commercial.setDocuments(new ArrayList<>());
         STORE.add(commercial);
+
+        // ── 4. 설계완료 상품 (CT 유즈케이스 데모용) ──────────────
+        Product design = new Product();
+        design.setProductId("PROD-004");
+        design.setProductCode("CAR-2026-MZ");
+        design.setProductName("MZ 세대 다이렉트 차보험");
+        design.setDescription("MZ 세대를 위한 신규 설계 자동차보험.");
+        design.setTarget(Product.Target.PERSONAL);
+        design.setLineOfBusiness(Product.LineOfBusiness.AUTO);
+        design.setStatus(Product.Status.DESIGN_COMPLETE);
+        try {
+            design.setSaleStartDate(sdf.parse("2026-05-01"));
+            design.setSaleEndDate(sdf.parse("2027-04-30"));
+        } catch (Exception ignored) {}
+        design.setRiders(new ArrayList<>());
+        design.setDocuments(new ArrayList<>());
+        STORE.add(design);
     }
 
     public List<Product> findAll() {
@@ -110,5 +127,19 @@ public class ProductRepository {
         return STORE.stream()
                 .filter(p -> p.getProductId().equals(productId))
                 .findFirst().orElse(null);
+    }
+
+    public boolean existsByCode(String code) {
+        return STORE.stream().anyMatch(p -> code.equals(p.getProductCode()));
+    }
+
+    public void save(Product p) {
+        for (int i = 0; i < STORE.size(); i++) {
+            if (STORE.get(i).getProductId().equals(p.getProductId())) {
+                STORE.set(i, p);
+                return;
+            }
+        }
+        STORE.add(p);
     }
 }

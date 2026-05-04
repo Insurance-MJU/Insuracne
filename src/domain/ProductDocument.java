@@ -12,7 +12,12 @@ public class ProductDocument {
     private Date submittedAt;
     private String title;
 
-    public enum DocType { GENERAL_TERMS, SPECIAL_TERMS, BASIC_DOCUMENT }
+    public enum DocType {
+        GENERAL_TERMS, SPECIAL_TERMS, BASIC_DOCUMENT,
+        RATE_CALC_BASIS, RATE_VERIFICATION,
+        APPROVAL_APPLICATION, SALE_NOTIFICATION,
+        PROFITABILITY_REPORT, DISCLOSURE
+    }
 
     // Setters
     public void setCreatedAt(Date v)            { this.createdAt = v; }

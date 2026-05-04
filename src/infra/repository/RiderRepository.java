@@ -1,4 +1,4 @@
-package infra;
+package infra.repository;
 
 import domain.Rider;
 import java.util.HashMap;

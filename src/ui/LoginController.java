@@ -2,7 +2,7 @@ package ui;
 
 import domain.common.User;
 import infra.Context;
-import infra.UserRepository;
+import infra.repository.UserRepository;
 import java.util.Scanner;
 
 public class LoginController {

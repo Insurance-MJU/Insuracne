@@ -18,15 +18,43 @@ public class Product {
     private Status status;
     private Target target;
 
-    public enum LineOfBusiness { AUTO, LIFE, FIRE }
+    public enum LineOfBusiness {
+        AUTO("자동차보험"), LIFE("생명보험"), FIRE("화재보험");
+        private final String label;
+        LineOfBusiness(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
 
-    public enum Status { DESIGN, ON_SALE, DISCONTINUED }
+    public enum Status {
+        DESIGN("설계중"), DESIGN_COMPLETE("설계완료"),
+        APPROVAL_PENDING("인가신청중"), APPROVED("인가완료"),
+        SALE_PENDING("판매신청중"), ON_SALE("판매중"), DISCONTINUED("판매중지");
+        private final String label;
+        Status(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
 
-    public enum Target { PERSONAL, BUSINESS, COMMERCIAL }
+    public enum Target {
+        PERSONAL("만 20세 이상 39세 이하 개인", "개인용"),
+        BUSINESS("업무용 차량 보유 사업자", "업무용"),
+        COMMERCIAL("영업용 차량 보유자", "영업용");
+        private final String description;
+        private final String autoPrefix;
+        Target(String description, String autoPrefix) {
+            this.description = description;
+            this.autoPrefix  = autoPrefix;
+        }
+        public String getDescription() { return description; }
+        public String getAutoLabel()   { return autoPrefix + "자동차보험"; }
+    }
 
-    public void discontinue() { this.status = Status.DISCONTINUED; }
-    public void ondesign()    { this.status = Status.DESIGN; }
-    public void onsale()      { this.status = Status.ON_SALE; }
+    public void discontinue()      { this.status = Status.DISCONTINUED; }
+    public void ondesign()         { this.status = Status.DESIGN; }
+    public void onsale()           { this.status = Status.ON_SALE; }
+    public void completeDesign()   { this.status = Status.DESIGN_COMPLETE; }
+    public void applyForApproval() { this.status = Status.APPROVAL_PENDING; }
+    public void completeApproval() { this.status = Status.APPROVED; }
+    public void applySalePermit()  { this.status = Status.SALE_PENDING; }
 
     public boolean isOnSale() {
         if (status != Status.ON_SALE) return false;
@@ -36,18 +64,12 @@ public class Product {
         return afterStart && beforeEnd;
     }
 
-    public String getTargetDescription() {
-        if (target == Target.PERSONAL)   return "만 20세 이상 39세 이하 개인";
-        if (target == Target.BUSINESS)   return "업무용 차량 보유 사업자";
-        if (target == Target.COMMERCIAL) return "영업용 차량 보유자";
-        return "";
-    }
-
-    public String getStatusLabel() {
-        if (status == Status.ON_SALE)      return "판매중";
-        if (status == Status.DISCONTINUED) return "판매중지";
-        if (status == Status.DESIGN)       return "설계중";
-        return "";
+    public String getStatusLabel()      { return status != null ? status.getLabel() : ""; }
+    public String getTargetDescription(){ return target != null ? target.getDescription() : ""; }
+    public String getLobLabel() {
+        if (lineOfBusiness == LineOfBusiness.AUTO && target != null)
+            return target.getAutoLabel();
+        return lineOfBusiness != null ? lineOfBusiness.getLabel() : "";
     }
 
     // Setters

@@ -1,4 +1,4 @@
-package infra;
+package infra.repository;
 
 import domain.common.User;
 import domain.common.UserRole;

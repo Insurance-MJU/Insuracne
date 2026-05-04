@@ -2,8 +2,8 @@ package ui.customer;
 
 import domain.*;
 import infra.Context;
-import infra.ProductRepository;
-import infra.RiderRepository;
+import infra.repository.ProductRepository;
+import infra.repository.RiderRepository;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Scanner;

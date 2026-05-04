@@ -1,7 +1,7 @@
 package ui.customer;
 
 import domain.*;
-import infra.CarRepository;
+import infra.repository.CarRepository;
 import infra.Context;
 import java.util.Scanner;
 
