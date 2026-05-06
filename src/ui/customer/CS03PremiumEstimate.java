@@ -3,6 +3,8 @@ package ui.customer;
 import domain.*;
 import infra.repository.CarRepository;
 import infra.Context;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class CS03PremiumEstimate {
@@ -71,7 +73,7 @@ public class CS03PremiumEstimate {
         // Step 3~4: 피보험자/계약자 정보 입력
         System.out.println("\n[피보험자/계약자 정보 입력]");
         System.out.print(" 피보험자 이름: ");
-        String insuredName = sc.nextLine().trim();
+        sc.nextLine();
         System.out.print(" 피보험자 주민번호 (예: 020101-3******): ");
         sc.nextLine();
         System.out.print(" 피보험자 연락처: ");
@@ -86,49 +88,38 @@ public class CS03PremiumEstimate {
             sc.nextLine();
         }
 
-        // Step 5~6: 할인 적용 항목
+        // Step 5~6: 할인 적용 항목 선택
         System.out.println("\n[할인 적용 항목 선택]");
-        System.out.println(" 1. 마일리지 가입       (할인율: 4.7%)");
-        System.out.println(" 2. 3년 무사고 할인     (할인율: 3.0%)");
-        System.out.println(" 3. ABS 특별요율        (할인율: 2.0%)");
+        for (PremiumCalculation.DiscountItem item : PremiumCalculation.DiscountItem.values()) {
+            System.out.printf(" %d. %s  (할인율: %.1f%%)%n",
+                ordinal(item) + 1, item.getLabel(), item.getRate() * 100);
+        }
         System.out.println(" 0. 해당 없음");
         System.out.print(" 선택 (쉼표로 복수 선택, 예: 1,2): ");
         String discountChoice = sc.nextLine().trim();
 
-        // Step 7: 최종 보험료 산출 (담보별 개별 요율 × 차량기준가액)
-        double purposeMult = 1.0;
-        if (purpose == Car.Purpose.BUSINESS)   purposeMult = 1.1;
-        if (purpose == Car.Purpose.COMMERCIAL) purposeMult = 1.3;
+        List<PremiumCalculation.DiscountItem> discounts = new ArrayList<>();
+        if (discountChoice.contains("1")) discounts.add(PremiumCalculation.DiscountItem.MILEAGE);
+        if (discountChoice.contains("2")) discounts.add(PremiumCalculation.DiscountItem.NO_ACCIDENT_3Y);
+        if (discountChoice.contains("3")) discounts.add(PremiumCalculation.DiscountItem.ABS);
 
-        double disc   = 0.0;
-        if (discountChoice.contains("1")) disc += 0.047;
-        if (discountChoice.contains("2")) disc += 0.030;
-        if (discountChoice.contains("3")) disc += 0.020;
-
-        long 대인1   = Math.round(stdValue * 0.00989 * purposeMult);
-        long 대인2   = Math.round(stdValue * 0.01771 * purposeMult);
-        long 대물    = Math.round(stdValue * 0.02967 * purposeMult);
-        long 자상    = Math.round(stdValue * 0.00044 * purposeMult);
-        long 무보험  = Math.round(stdValue * 0.00093 * purposeMult);
-        long 자차    = Math.round(stdValue * 0.01417 * purposeMult);
-        long 긴급    = Math.round(stdValue * 0.00146 * purposeMult);
-        long subtotal = 대인1 + 대인2 + 대물 + 자상 + 무보험 + 자차 + 긴급;
-        long 할인금액 = Math.round(subtotal * disc);
-        long finalPremium = subtotal - 할인금액;
+        // Step 7: 도메인이 보험료 산출
+        PremiumCalculation calc = PremiumCalculation.calculate(stdValue, purpose, discounts);
 
         // E1: 시스템 내부 오류 (시뮬레이션 - 정상 처리)
         System.out.println("\n[최종 보험료 확인]");
         System.out.println("------------------------------------------------------------");
-        System.out.printf(" 대인배상I (의무)  : %,d원%n", 대인1);
-        System.out.printf(" 대인배상II        : %,d원%n", 대인2);
-        System.out.printf(" 대물배상          : %,d원%n", 대물);
-        System.out.printf(" 자동차상해        : %,d원%n", 자상);
-        System.out.printf(" 무보험차상해      : %,d원%n", 무보험);
-        System.out.printf(" 자기차량손해      : %,d원%n", 자차);
-        System.out.printf(" 긴급출동서비스    : %,d원%n", 긴급);
-        System.out.printf(" 할인금액          : -%,d원  (%.1f%% 적용)%n", 할인금액, disc * 100);
+        System.out.printf(" 대인배상I (의무)  : %,d원%n", calc.getPersonalInjuryMandatory());
+        System.out.printf(" 대인배상II        : %,d원%n", calc.getPersonalInjuryOptional());
+        System.out.printf(" 대물배상          : %,d원%n", calc.getPropertyDamage());
+        System.out.printf(" 자동차상해        : %,d원%n", calc.getAutoInjury());
+        System.out.printf(" 무보험차상해      : %,d원%n", calc.getUninsuredVehicle());
+        System.out.printf(" 자기차량손해      : %,d원%n", calc.getOwnVehicleDamage());
+        System.out.printf(" 긴급출동서비스    : %,d원%n", calc.getEmergencyService());
+        System.out.printf(" 할인금액          : -%,d원  (%.1f%% 적용)%n",
+            calc.getDiscountAmount(), calc.getDiscountRate() * 100);
         System.out.println("------------------------------------------------------------");
-        System.out.printf(" ── 최종 보험료    : %,d원/년%n", finalPremium);
+        System.out.printf(" ── 최종 보험료    : %,d원/년%n", calc.getFinalPremium());
         System.out.println("------------------------------------------------------------");
 
         // Step 8: 청약 내용 및 상품설명서 확인
@@ -148,7 +139,15 @@ public class CS03PremiumEstimate {
         }
 
         System.out.println("\n보험가입을 신청하는 중입니다...");
-        return finalPremium;
+        return calc.getFinalPremium();
+    }
+
+    private int ordinal(PremiumCalculation.DiscountItem item) {
+        PremiumCalculation.DiscountItem[] values = PremiumCalculation.DiscountItem.values();
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == item) return i;
+        }
+        return 0;
     }
 
     private void returnToMenu() {
