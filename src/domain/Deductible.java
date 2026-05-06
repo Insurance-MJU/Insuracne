@@ -7,7 +7,11 @@ public class Deductible {
     private Double rate;
     private DeductibleType type;
 
-    public enum DeductibleType {}
+    public enum DeductibleType {
+        NONE,        // 자기부담금 없음
+        FIXED,       // 정액 (예: 20만원 고정)
+        RATE         // 비율 (예: 손해액의 20%)
+    }
 
     private Deductible() {}
 

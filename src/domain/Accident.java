@@ -21,8 +21,24 @@ public class Accident implements Serializable {
     private String expectedRepairCost;
     private String regionCode;
 
-    public enum AccidentType {}
-    public enum SeverityLevel {}
+    public enum AccidentType {
+        COLLISION,       // 충돌사고 (차량 간)
+        REAR_END,        // 추돌사고
+        SINGLE,          // 단독사고
+        HIT_AND_RUN,     // 뺑소니
+        FIRE,            // 차량 화재
+        FLOOD,           // 침수
+        THEFT,           // 도난
+        NATURAL_DISASTER // 자연재해 (태풍·우박 등)
+    }
+
+    public enum SeverityLevel {
+        MINOR,      // 경상 (부상 8~14급)
+        MODERATE,   // 중상 (부상 1~7급)
+        SEVERE,     // 중증
+        FATAL,      // 사망
+        TOTAL_LOSS  // 전손 (차량)
+    }
 
     public Accident() {}
 

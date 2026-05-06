@@ -13,7 +13,13 @@ public class Party implements Serializable {
     private Role role;
     private String ssn;
 
-    public enum Role {}
+    public enum Role {
+        POLICYHOLDER, // 계약자
+        INSURED,      // 피보험자
+        BENEFICIARY,  // 수익자
+        CLAIMANT,     // 청구인
+        THIRD_PARTY   // 제3자 (사고 상대방)
+    }
 
     // SSN(YYMMDD-G******) 에서 만 나이 계산
     public static int calcAge(String ssn) {
