@@ -1,11 +1,11 @@
 package infra.repository;
 
 import domain.Rider;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
 
 public class RiderRepository {
-    private static final Map<String, Rider> STORE = new HashMap<>();
+    private static final Map<String, Rider> STORE = new LinkedHashMap<>();
 
     static {
         Rider mileage = new Rider();
@@ -38,9 +38,28 @@ public class RiderRepository {
         tmap.setDiscountRate(0.10);
         tmap.setMandatory(false);
         STORE.put("RC-TMAP", tmap);
+
+        // ── 3. 블랙박스할인특약 ──────────────────────────────────
+        Rider blackbox = new Rider();
+        blackbox.setRiderId("RIDER-003");
+        blackbox.setRiderCode("RC-BLACKBOX");
+        blackbox.setRiderName("블랙박스할인특약");
+        blackbox.setRiderType(Rider.RiderType.DISCOUNT);
+        blackbox.setDescription(
+            "차량 내 블랙박스 장착 시 보험료를 할인받을 수 있는 특약입니다.\n" +
+            " - 전후방 2채널: 5% 할인\n" +
+            " - 전후방+측방 4채널: 7% 할인"
+        );
+        blackbox.setDiscountRate(0.05);
+        blackbox.setMandatory(false);
+        STORE.put("RC-BLACKBOX", blackbox);
     }
 
     public Rider findByCode(String riderCode) {
         return STORE.get(riderCode);
+    }
+
+    public List<Rider> findAll() {
+        return Collections.unmodifiableList(new ArrayList<>(STORE.values()));
     }
 }

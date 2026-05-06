@@ -2,31 +2,19 @@ package ui.employee;
 
 import domain.*;
 import infra.Context;
+import infra.repository.CoverageRepository;
 import infra.repository.ProductRepository;
+import infra.repository.RiderRepository;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class CT01ProductDesign {
     private final Scanner sc = Context.getInstance().scanner();
-    private final ProductRepository productRepo = new ProductRepository();
+    private final ProductRepository  productRepo  = new ProductRepository();
+    private final CoverageRepository coverageRepo = new CoverageRepository();
+    private final RiderRepository    riderRepo    = new RiderRepository();
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
-
-    private static final String[] COVERAGE_NAMES = {
-        "대인배상 I", "대인배상 II", "대물배상",
-        "자동차상해", "자기차량손해", "무보험차상해"
-    };
-    private static final String[][] COVERAGE_OPTIONS = {
-        {"기본 옵션"},
-        {"한도5억", "무한"},
-        {"기본옵션"},
-        {"기본옵션"},
-        {"기본옵션"},
-        {"기본옵션"}
-    };
-    private static final boolean[] COVERAGE_MANDATORY = {
-        true, false, false, false, false, false
-    };
-    private static final String[] RIDER_NAMES = {"블랙박스할인특약", "마일리지할인특약"};
 
     public void run() {
         System.out.println("\n========================================");
@@ -71,63 +59,76 @@ public class CT01ProductDesign {
         try { saleEnd   = SDF.parse(endStr);   } catch (Exception ignored) {}
 
         System.out.print(" 가입대상 (예: 만 20세 이상 39세 이하 운전자): ");
-        String targetDesc = sc.nextLine().trim();
+        sc.nextLine();
         System.out.print(" 설명: ");
         String description = sc.nextLine().trim();
 
         System.out.print("\n[다음] (Enter): ");
         sc.nextLine();
 
-        // ── Step 4~5: 담보 선택 ───────────────────────────────
-        List<Integer> selectedCoverageIdxs;
+        // ── Step 4~5: 담보 선택 (CoverageRepository) ─────────────
+        List<Coverage> allCoverages = coverageRepo.findAll();
+        Map<Coverage, List<CoverageLimitOption>> selectedOptions;
+
         while (true) {
             System.out.println("\n── 담보 목록 ──────────────────────────");
-            for (int i = 0; i < COVERAGE_NAMES.length; i++) {
-                System.out.printf("  %d. %s%s%n", i + 1, COVERAGE_NAMES[i],
-                        COVERAGE_MANDATORY[i] ? " (필수)" : "");
+            for (int i = 0; i < allCoverages.size(); i++) {
+                Coverage c = allCoverages.get(i);
+                System.out.printf("  %d. %s%s%n", i + 1, c.getCoverageName(),
+                        c.isMandatory() ? " (필수)" : "");
             }
             System.out.print("\n선택할 담보 번호 (쉼표 구분, 예: 1,2,3): ");
-            selectedCoverageIdxs = parseNumbers(sc.nextLine().trim(), COVERAGE_NAMES.length);
+            List<Integer> idxs = parseNumbers(sc.nextLine().trim(), allCoverages.size());
 
-            // A1: 대인배상 I 필수 검사
-            if (!selectedCoverageIdxs.contains(0)) {
+            // A1: 대인배상 I(필수) 포함 여부 검사
+            boolean hasMandatory = idxs.stream()
+                    .map(allCoverages::get)
+                    .anyMatch(c -> c.getCoverageType() == Coverage.CoverageType.PERSONAL_INJURY_MANDATORY);
+            if (!hasMandatory) {
                 System.out.println("[경고] 대인배상 I은 자동차보험의 필수 담보입니다. 담보 리스트에 추가해 주세요.");
-            } else {
-                break;
+                continue;
             }
-        }
 
-        // 가입 옵션 선택
-        Map<String, String> coverageOptionMap = new LinkedHashMap<>();
-        for (int idx : selectedCoverageIdxs) {
-            String[] opts = COVERAGE_OPTIONS[idx];
-            if (opts.length == 1) {
-                coverageOptionMap.put(COVERAGE_NAMES[idx], opts[0]);
-            } else {
-                System.out.printf("%n[%s 가입 옵션]%n", COVERAGE_NAMES[idx]);
-                for (int j = 0; j < opts.length; j++) {
-                    System.out.printf("  %d. %s%n", j + 1, opts[j]);
+            // 가입 옵션 선택
+            selectedOptions = new LinkedHashMap<>();
+            for (int idx : idxs) {
+                Coverage c = allCoverages.get(idx);
+                List<CoverageLimitOption> opts = c.getLimitOptions();
+                if (opts == null || opts.size() <= 1) {
+                    selectedOptions.put(c, opts != null ? opts : Collections.emptyList());
+                } else {
+                    System.out.printf("%n[%s 가입 옵션]%n", c.getCoverageName());
+                    for (int j = 0; j < opts.size(); j++) {
+                        System.out.printf("  %d. %s%n", j + 1, opts.get(j).getOptionName());
+                    }
+                    System.out.print(" 선택 (쉼표로 복수 선택): ");
+                    List<Integer> optIdxs = parseNumbers(sc.nextLine().trim(), opts.size());
+                    List<CoverageLimitOption> chosen = optIdxs.stream()
+                            .map(opts::get).collect(Collectors.toList());
+                    selectedOptions.put(c, chosen.isEmpty() ? Collections.singletonList(opts.get(0)) : chosen);
                 }
-                System.out.print(" 선택 (쉼표로 복수 선택): ");
-                List<Integer> optIdxs = parseNumbers(sc.nextLine().trim(), opts.length);
-                StringJoiner sj = new StringJoiner(", ");
-                for (int oi : optIdxs) sj.add(opts[oi]);
-                coverageOptionMap.put(COVERAGE_NAMES[idx], sj.length() > 0 ? sj.toString() : opts[0]);
             }
+            break;
         }
 
         System.out.print("\n[다음] (Enter): ");
         sc.nextLine();
 
-        // ── Step 6~7: 특약 선택 ───────────────────────────────
+        // ── Step 6~7: 특약 선택 (RiderRepository) ────────────────
+        List<Rider> allRiders = riderRepo.findAll();
         System.out.println("\n── 특약 목록 ──────────────────────────");
-        for (int i = 0; i < RIDER_NAMES.length; i++) {
-            System.out.printf("  %d. %s%n", i + 1, RIDER_NAMES[i]);
+        for (int i = 0; i < allRiders.size(); i++) {
+            Rider r = allRiders.get(i);
+            String disc = r.getDiscountRate() != null
+                    ? String.format(" (%.0f%% 할인)", r.getDiscountRate() * 100) : "";
+            System.out.printf("  %d. %s%s%n", i + 1, r.getRiderName(), disc);
         }
         System.out.print("선택 번호 (없으면 Enter): ");
         String riderInput = sc.nextLine().trim();
-        List<Integer> selectedRiderIdxs = riderInput.isEmpty()
-                ? new ArrayList<>() : parseNumbers(riderInput, RIDER_NAMES.length);
+        List<Rider> selectedRiders = riderInput.isEmpty()
+                ? Collections.emptyList()
+                : parseNumbers(riderInput, allRiders.size()).stream()
+                        .map(allRiders::get).collect(Collectors.toList());
 
         System.out.print("\n[다음] (Enter): ");
         sc.nextLine();
@@ -138,25 +139,25 @@ public class CT01ProductDesign {
         System.out.printf(" 상품코드  : %s%n", productCode);
         System.out.printf(" 보험종목  : %s%n", target.getAutoLabel());
         System.out.printf(" 판매기간  : %s ~ %s%n", startStr, endStr);
-        System.out.printf(" 가입대상  : %s%n", targetDesc);
         System.out.println(" 선택 담보:");
-        for (Map.Entry<String, String> e : coverageOptionMap.entrySet()) {
-            System.out.printf("   - %s [%s]%n", e.getKey(), e.getValue());
+        for (Map.Entry<Coverage, List<CoverageLimitOption>> e : selectedOptions.entrySet()) {
+            String optStr = e.getValue().stream()
+                    .map(CoverageLimitOption::getOptionName)
+                    .collect(Collectors.joining(", "));
+            System.out.printf("   - %s [%s]%n", e.getKey().getCoverageName(),
+                    optStr.isEmpty() ? "기본 옵션" : optStr);
         }
-        if (!selectedRiderIdxs.isEmpty()) {
+        if (!selectedRiders.isEmpty()) {
             System.out.println(" 선택 특약:");
-            for (int idx : selectedRiderIdxs) {
-                System.out.printf("   - %s%n", RIDER_NAMES[idx]);
-            }
+            selectedRiders.forEach(r -> System.out.printf("   - %s%n", r.getRiderName()));
         }
 
         // ── Step 9: <<include>> CT-02 ─────────────────────────
         System.out.print("\n[보험료 산출] (Enter): ");
         sc.nextLine();
 
-        List<String> selectedCoverageNames = new ArrayList<>();
-        for (int idx : selectedCoverageIdxs) selectedCoverageNames.add(COVERAGE_NAMES[idx]);
-
+        List<String> selectedCoverageNames = selectedOptions.keySet().stream()
+                .map(Coverage::getCoverageName).collect(Collectors.toList());
         long[] premiumResult = new CT02PremiumCalculation().runAsInclude(productName, selectedCoverageNames, saleEnd);
         if (premiumResult == null) { returnToMenu(); return; }
 
@@ -172,7 +173,6 @@ public class CT01ProductDesign {
         System.out.print("\n[상품 확정] (Enter): ");
         sc.nextLine();
 
-        // Product 객체 생성 및 저장
         Product product = new Product();
         product.setProductId("PROD-" + System.currentTimeMillis());
         product.setProductCode(productCode);
@@ -184,7 +184,7 @@ public class CT01ProductDesign {
         product.setSaleEndDate(saleEnd);
         product.setDocuments(new ArrayList<>());
         product.setCoverages(new ArrayList<>());
-        product.setRiders(buildProductRiders(selectedRiderIdxs));
+        product.setRiders(buildProductRiders(selectedRiders));
         product.completeDesign();
         product.setCreatedAt(new Date());
         productRepo.save(product);
@@ -196,13 +196,15 @@ public class CT01ProductDesign {
         returnToMenu();
     }
 
-    private List<ProductRider> buildProductRiders(List<Integer> idxs) {
+    private List<ProductRider> buildProductRiders(List<Rider> riders) {
         List<ProductRider> list = new ArrayList<>();
-        for (int idx : idxs) {
+        for (Rider r : riders) {
             ProductRider pr = new ProductRider();
-            pr.setProductRiderId("PR-NEW-" + idx);
-            pr.setRiderName(RIDER_NAMES[idx]);
-            pr.setRiderCode("RC-NEW-" + idx);
+            pr.setProductRiderId("PR-" + r.getRiderId());
+            pr.setRiderId(r.getRiderId());
+            pr.setRiderCode(r.getRiderCode());
+            pr.setRiderName(r.getRiderName());
+            if (r.getDiscountRate() != null) pr.setDiscountRate(r.getDiscountRate());
             list.add(pr);
         }
         return list;
