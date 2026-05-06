@@ -100,9 +100,10 @@ public class CL01AccidentRegistration {
         System.out.println("------------------------------------------------------------");
 
         // Step 7: 배당 담당자 검색 조건 입력
+        String regionCode = (accident != null && accident.getRegionCode() != null)
+            ? accident.getRegionCode() : "-";
         System.out.println("\n[ 배당 담당자 검색 ]");
-        System.out.print("사고 발생 지역 코드 (예: SEOUL-01): ");
-        String regionCode = sc.nextLine().trim();
+        System.out.println("사고 발생 지역 코드: " + regionCode);
         System.out.print("전문 분야 (예: 자동차 대물): ");
         String specialty = sc.nextLine().trim();
         System.out.println("[배당 담당자 검색]");
@@ -113,7 +114,7 @@ public class CL01AccidentRegistration {
         System.out.printf("%-15s %-14s %-10s%n", "직원 번호", "직원명", "미결 건수");
         System.out.println("------------------------------------------------------------");
         List<EmployeeRepository.FieldInvestigator> investigators =
-            EmployeeRepository.findByRegionAndSpecialty(regionCode, specialty);
+            EmployeeRepository.findBySpecialty(specialty);
         if (investigators.isEmpty()) {
             System.out.println("  해당 조건에 맞는 현장조사역이 없습니다.");
         } else {

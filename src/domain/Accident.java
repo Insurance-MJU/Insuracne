@@ -16,6 +16,7 @@ public class Accident {
     private String personalInjuryLimit;
     private String vehicleInfo;
     private String expectedRepairCost;
+    private String regionCode;
 
     public enum AccidentType {}
     public enum SeverityLevel {}
@@ -60,6 +61,7 @@ public class Accident {
     public String getPersonalInjuryLimit() { return personalInjuryLimit; }
     public String getVehicleInfo() { return vehicleInfo; }
     public String getExpectedRepairCost() { return expectedRepairCost; }
+    public String getRegionCode() { return regionCode; }
 
     public void setAccidentId(String v) { this.accidentId = v; }
     public void setAccidentDate(String v) { this.accidentDate = v; }
@@ -76,4 +78,5 @@ public class Accident {
     public void setPersonalInjuryLimit(String v) { this.personalInjuryLimit = v; }
     public void setVehicleInfo(String v) { this.vehicleInfo = v; }
     public void setExpectedRepairCost(String v) { this.expectedRepairCost = v; }
+    public void setRegionCode(String v) { this.regionCode = v; }
 }

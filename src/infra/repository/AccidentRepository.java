@@ -25,6 +25,7 @@ public class AccidentRepository {
         );
         a1.setPersonalInjuryLimit("1,000만원");
         a1.setExpectedRepairCost("850,000원");
+        a1.setRegionCode("SEOUL-01");
         STORE.add(a1);
 
         Accident a2 = new Accident(
@@ -41,6 +42,7 @@ public class AccidentRepository {
         );
         a2.setPersonalInjuryLimit("2,000만원");
         a2.setExpectedRepairCost("1,200,000원");
+        a2.setRegionCode("GYEONGGI-01");
         STORE.add(a2);
 
         Accident a3 = new Accident(
@@ -57,6 +59,7 @@ public class AccidentRepository {
         );
         a3.setPersonalInjuryLimit("3,000만원");
         a3.setExpectedRepairCost("3,500,000원");
+        a3.setRegionCode("INCHEON-01");
         STORE.add(a3);
     }
 
