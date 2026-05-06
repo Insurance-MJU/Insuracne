@@ -160,6 +160,7 @@ public class CS01ProductSubscription {
             new Money(confirmedPremium, "KRW"),
             car.getCarNumber(),
             "대인배상I, 대인배상II, 대물배상, 자동차상해, 무보험차상해, 자기차량손해",
+            "2,000만원",
             driverScope.getScopeLabel()
         );
         ContractRepository.save(contract);

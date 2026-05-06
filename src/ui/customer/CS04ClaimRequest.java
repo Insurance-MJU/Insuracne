@@ -23,7 +23,7 @@ public class CS04ClaimRequest {
         System.out.print(" 이름: ");
         String authName = sc.nextLine().trim();
         System.out.print(" 휴대전화번호 (예: 010-1234-5678): ");
-        sc.nextLine();
+        String authPhone = sc.nextLine().trim();
         System.out.print(" 인증번호 (예: 123456): ");
         sc.nextLine();
 
@@ -88,6 +88,7 @@ public class CS04ClaimRequest {
         Accident accident = Accident.report(
             AccidentRepository.nextId(),
             authName,
+            authPhone,
             accidentDate,
             accidentPlace,
             accidentDetail,

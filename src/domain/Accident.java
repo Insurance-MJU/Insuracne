@@ -62,14 +62,14 @@ public class Accident implements Serializable {
     }
 
     // ── 정적 팩토리: 고객 보험금 청구 접수 ───────────────────
-    public static Accident report(String accidentId, String reportedBy,
+    public static Accident report(String accidentId, String reportedBy, String phone,
                                    String accidentDate, String accidentLocation,
                                    String accidentDetail, String documents,
                                    Contract contract) {
         Accident a = new Accident();
         a.accidentId          = accidentId;
         a.reportedBy          = reportedBy;
-        a.phone               = "";
+        a.phone               = phone;
         a.description         = "보험금 청구";
         a.accidentDate        = accidentDate;
         a.accidentLocation    = accidentLocation;
@@ -77,7 +77,7 @@ public class Accident implements Serializable {
         a.documents           = documents;
         a.contractId          = contract.getContractId();
         a.coverageDescription = contract.getCoveragesDescription();
-        a.coverageLimit       = "";
+        a.coverageLimit       = contract.getCoverageLimit();
         a.vehicleInfo         = contract.getCarNumber();
         a.status              = "미처리";
         return a;

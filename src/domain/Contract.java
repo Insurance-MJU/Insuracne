@@ -26,6 +26,7 @@ public class Contract implements Serializable {
     private Status status;
     private String carNumber;
     private String coveragesDescription;
+    private String coverageLimit;
     private String ridersDescription;
     private String productName;
 
@@ -45,7 +46,8 @@ public class Contract implements Serializable {
     // ── 정적 팩토리: 신규 계약 발행 ──────────────────────────
     public static Contract issue(String policyNo, String contractId, String productName,
                                   Party holder, Money premium, String carNumber,
-                                  String coveragesDescription, String ridersDescription) {
+                                  String coveragesDescription, String coverageLimit,
+                                  String ridersDescription) {
         Contract c = new Contract();
         c.policyNo             = policyNo;
         c.contractId           = contractId;
@@ -54,6 +56,7 @@ public class Contract implements Serializable {
         c.premium              = premium;
         c.carNumber            = carNumber;
         c.coveragesDescription = coveragesDescription;
+        c.coverageLimit        = coverageLimit;
         c.ridersDescription    = ridersDescription;
         c.issueDate            = new java.util.Date();
         c.startDate            = new java.util.Date();
@@ -93,6 +96,7 @@ public class Contract implements Serializable {
     public Status getStatus()                     { return status; }
     public String getCarNumber()                  { return carNumber; }
     public String getCoveragesDescription()       { return coveragesDescription; }
+    public String getCoverageLimit()              { return coverageLimit != null ? coverageLimit : ""; }
     public String getRidersDescription()          { return ridersDescription; }
     public String getProductName()                { return productName; }
 
@@ -113,6 +117,7 @@ public class Contract implements Serializable {
     public void setStatus(Status v)                       { this.status = v; }
     public void setCarNumber(String v)                    { this.carNumber = v; }
     public void setCoveragesDescription(String v)         { this.coveragesDescription = v; }
+    public void setCoverageLimit(String v)                { this.coverageLimit = v; }
     public void setRidersDescription(String v)            { this.ridersDescription = v; }
     public void setProductName(String v)                  { this.productName = v; }
 }
