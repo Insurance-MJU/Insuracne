@@ -90,6 +90,11 @@ public class Product implements Serializable {
     public void completeApproval() { this.status = Status.APPROVED; }
     public void applySalePermit()  { this.status = Status.SALE_PENDING; }
 
+    /** 자동차보험 표준 담보 목록 문자열 — 의무 담보(대인I) 포함 전 담보 */
+    public String getDefaultCoverageDescription() {
+        return "대인배상I, 대인배상II, 대물배상, 자동차상해, 무보험차상해, 자기차량손해";
+    }
+
     public boolean isOnSale() {
         if (status != Status.ON_SALE) return false;
         Date now = new Date();

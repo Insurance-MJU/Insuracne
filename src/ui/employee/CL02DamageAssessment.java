@@ -54,8 +54,8 @@ public class CL02DamageAssessment {
                 continue;
             }
 
-            // <<include>> CL-03
-            new CL03DamageInvestigation().run();
+            // <<include>> CL-03 — 이미 확보한 accNo를 전달하여 이중 입력 방지
+            new CL03DamageInvestigation().runAsInclude(accNo);
 
             // Step 6: 보상 한도액 출력 (레포지토리 데이터 반영)
             String personalLimit = (accident != null && accident.getPersonalInjuryLimit() != null)

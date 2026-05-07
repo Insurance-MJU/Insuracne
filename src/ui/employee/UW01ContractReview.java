@@ -86,7 +86,7 @@ public class UW01ContractReview {
         System.out.print("\n최종 심사 의견을 입력하세요: ");
         String opinion = sc.nextLine().trim();
 
-        report.confirm("김민욱", opinion);
+        report.confirm(Context.getInstance().getCurrentUser().getName(), opinion);
         RiskAnalysisRepository.save(report);
         System.out.println("[저장]");
 

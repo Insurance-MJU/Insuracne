@@ -5,7 +5,9 @@ import domain.common.Money;
 import infra.Context;
 import infra.repository.CarRepository;
 import infra.repository.ContractRepository;
+import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class CS01ProductSubscription {
 
@@ -139,8 +141,11 @@ public class CS01ProductSubscription {
             return;
         }
 
-        // E2: 자동심사 (영업용은 거절)
-        if (!car.isDriverAllowed(Party.calcAge(ssn)) || purpose == Car.Purpose.COMMERCIAL) {
+        // E2: 자동심사 (영업용 거절, 연령 제한 위반 거절)
+        // calcAge가 -1을 반환하면 SSN 파싱 실패이므로 연령 제한은 통과(E1에서 이미 검사)
+        int driverAge = Party.calcAge(ssn);
+        boolean ageAllowed = (driverAge == -1) || car.isDriverAllowed(driverAge);
+        if (!ageAllowed || purpose == Car.Purpose.COMMERCIAL) {
             System.out.println("\n[거절] 가입이 거절되었습니다. 자세한 사항은 고객 센터로 연락주세요.(1588-1000)");
             returnToMenu();
             return;
@@ -152,6 +157,10 @@ public class CS01ProductSubscription {
         holder.setName(name);
         holder.setPhone(phone);
 
+        // WARN-1: 담보·특약 정보를 하드코딩 대신 선택 상품에서 가져옴
+        String coveragesDesc = selectedProduct.getDefaultCoverageDescription();
+        String ridersDesc = buildRidersDescription(selectedProduct.getRiders());
+
         Contract contract = Contract.issue(
             ContractRepository.nextPolicyNo(),
             ContractRepository.nextContractId(),
@@ -159,9 +168,9 @@ public class CS01ProductSubscription {
             holder,
             new Money(confirmedPremium, "KRW"),
             car.getCarNumber(),
-            "대인배상I, 대인배상II, 대물배상, 자동차상해, 무보험차상해, 자기차량손해",
+            coveragesDesc,
             "2,000만원",
-            driverScope.getScopeLabel()
+            ridersDesc
         );
         ContractRepository.save(contract);
 
@@ -178,6 +187,13 @@ public class CS01ProductSubscription {
         System.out.printf(" 운전자범위  : %s%n", driverScope.getScopeLabel());
         System.out.printf(" 보험료      : %,d원/년%n", confirmedPremium);
         returnToMenu();
+    }
+
+    private String buildRidersDescription(List<ProductRider> riders) {
+        if (riders == null || riders.isEmpty()) return "없음";
+        return riders.stream()
+            .map(ProductRider::getRiderName)
+            .collect(Collectors.joining(", "));
     }
 
     private void returnToMenu() {

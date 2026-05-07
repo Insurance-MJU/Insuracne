@@ -4,10 +4,14 @@ import domain.Accident;
 import domain.Contract;
 import infra.Context;
 import infra.repository.AccidentRepository;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
 public class CS04ClaimRequest {
     private final Scanner sc = Context.getInstance().scanner();
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     public void run() {
         System.out.println("\n========================================");
@@ -31,7 +35,7 @@ public class CS04ClaimRequest {
         System.out.println("\n[본인 인증 결과]");
         System.out.println(" 고객명 확인: " + authName);
 
-        // Step 5: 내 보험계약 확인 → include CS-05
+        // Step 5: 계약 조회 동의
         System.out.print("\n계약 조회에 동의하십니까? (Y/N): ");
         if (!sc.nextLine().trim().equalsIgnoreCase("Y")) {
             System.out.println("[안내] 계약 조회 동의가 필요합니다.");
@@ -39,8 +43,9 @@ public class CS04ClaimRequest {
             return;
         }
 
+        // <<include>> CS-05: CS-04 인증이 완료되었으므로 authName을 직접 전달(중복 인증 제거)
         // A1: 청구 대상 계약 미선택
-        Contract selectedContract = new CS05ContractInquiry().runAsInclude();
+        Contract selectedContract = new CS05ContractInquiry().runAsInclude(authName);
         if (selectedContract == null) {
             System.out.println("\n[경고] 대상 보험 계약은 필수 선택 사항입니다. 대상을 리스트에 추가해 주세요.");
             returnToMenu();
@@ -56,9 +61,11 @@ public class CS04ClaimRequest {
         System.out.print(" 상세 경위 (예: 후방 추돌): ");
         String accidentDetail = sc.nextLine().trim();
 
-        // E1: 사고 발생 일시가 보험 가입 기간 외인 경우
-        if (accidentDate.contains("2025") || accidentDate.isEmpty()) {
+        // E1: 사고 발생 일시가 보험 가입 기간 외인 경우 — 계약의 실제 기간과 비교
+        if (!isAccidentDateValid(accidentDate, selectedContract)) {
             System.out.println("\n[오류] 입력된 사고 일시 값이 허용 범위를 초과하였습니다.");
+            System.out.println("       사고 일시는 보험계약 기간(" + selectedContract.getIssueDateString()
+                + " ~ " + formatDate(selectedContract.getEndDate()) + ") 내여야 합니다.");
             System.out.println("       사고 일시를 수정하고 다시 시도해주세요.");
             returnToMenu();
             return;
@@ -110,6 +117,32 @@ public class CS04ClaimRequest {
         System.out.println("\n보험금 청구가 완료되었습니다.");
 
         returnToMenu();
+    }
+
+    /**
+     * E1: 사고 일시가 계약 기간 내에 있는지 검증.
+     * - 빈 문자열이면 false
+     * - 파싱 불가 형식이면 false
+     * - 계약 startDate 이전이면 false
+     * - 계약 endDate 이후이면 false (endDate가 null이면 상한 없음)
+     */
+    private boolean isAccidentDateValid(String accidentDate, Contract contract) {
+        if (accidentDate == null || accidentDate.isEmpty()) return false;
+        try {
+            Date accDate = SDF.parse(accidentDate);
+            Date contractStart = contract.getStartDate();
+            Date contractEnd   = contract.getEndDate();
+            if (contractStart != null && accDate.before(contractStart)) return false;
+            if (contractEnd   != null && accDate.after(contractEnd))    return false;
+            return true;
+        } catch (ParseException e) {
+            return false;
+        }
+    }
+
+    private String formatDate(Date date) {
+        if (date == null) return "무기한";
+        return new java.text.SimpleDateFormat("yyyy-MM-dd").format(date);
     }
 
     private void returnToMenu() {

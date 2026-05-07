@@ -13,22 +13,35 @@ public class CL03DamageInvestigation {
 
     private static final int MAX_INJURY_GRADE = 14;
 
+    /** 메인 메뉴에서 단독 실행 — 접수번호를 직접 입력받음 */
     public void run() {
         System.out.println("\n[CL-03] 손해를 조사한다");
         System.out.println("========================================");
 
-        // Step 1: 사고 접수번호 입력
         System.out.println("\n[ 현장 조사 및 피해 입력 ]");
         System.out.print("사고 접수 번호 (예: ACC-2026-001): ");
         String accNo = sc.nextLine().trim();
         System.out.println("[현장 조사 및 피해 입력]");
 
-        // 레포지토리에서 사고 정보 조회
+        doInvestigation(accNo);
+    }
+
+    /** CL-02에 의해 include — 이미 알고 있는 접수번호를 파라미터로 받아 이중 입력 방지 */
+    public void runAsInclude(String accNo) {
+        System.out.println("\n[CL-03] 손해를 조사한다");
+        System.out.println("========================================");
+        System.out.println("(CL-02에 의해 include)");
+        System.out.println("\n[ 현장 조사 및 피해 입력 ]");
+        System.out.println("[현장 조사 및 피해 입력]");
+
+        doInvestigation(accNo);
+    }
+
+    // ── 공통 조사 로직 ────────────────────────────────────────────────────
+    private void doInvestigation(String accNo) {
         Accident accident = AccidentRepository.findById(accNo);
 
-        // Step 3 부터 A1/E1 발생 시 재시작
         while (true) {
-            // Step 2: 현장 조사 폼 출력
             System.out.println("\n[ 현장 조사 폼 - " + accNo + " ]");
             System.out.println("------------------------------------------------------------");
             System.out.println("  현장출동 소견 / 파손 부위 / 부상 정도 입력");
@@ -60,7 +73,7 @@ public class CL03DamageInvestigation {
                 continue;
             }
 
-            // Step 4: 레포지토리 데이터 기반 보상 한도 범위 출력
+            // Step 4: 보상 한도 범위 출력
             String expectedRepairCost = (accident != null && accident.getExpectedRepairCost() != null)
                 ? accident.getExpectedRepairCost() : "미산정";
             String compensationLimit = (accident != null) ? accident.getCoverageLimit() : "1,000만원";
@@ -89,7 +102,7 @@ public class CL03DamageInvestigation {
                 continue;
             }
 
-            // Step 6: 과실 비율 검증 결과 출력
+            // Step 6: 과실 비율 검증
             System.out.println("\n[ 과실 비율 검증 결과 ]");
             System.out.println("------------------------------------------------------------");
             if (!DamageInvestigation.validateFaultRatio(ourFault, otherFault)) {
@@ -105,7 +118,7 @@ public class CL03DamageInvestigation {
             String liability = sc.nextLine().trim();
             System.out.println("[면/부책 판정]");
 
-            // Step 8: 손해 조사 내역 취합 (조사 보고서 초안)
+            // Step 8: 조사 보고서 초안
             System.out.println("\n[ 손해 조사 내역 취합 - 조사 보고서 초안 ]");
             System.out.println("------------------------------------------------------------");
             System.out.println("  접수 번호      : " + accNo);
@@ -117,13 +130,13 @@ public class CL03DamageInvestigation {
             System.out.println("  면/부책 여부   : " + liability);
             System.out.println("------------------------------------------------------------");
 
-            // Step 9: 최종 조사 의견 입력
+            // Step 9: 최종 조사 의견
             System.out.println("\n[ 조사 완료 및 저장 ]");
             System.out.print("최종 조사 의견 (예: 합의금 산출 진행 요망): ");
             String finalOpinion = sc.nextLine().trim();
             System.out.println("[조사 완료 및 저장]");
 
-            // Step 10: 레포지토리에 조사 결과 저장
+            // Step 10: 저장
             DamageInvestigation inv = DamageInvestigation.create(
                 accNo, opinion, damageCode, injuryGrade,
                 ourFault, otherFault, liability,

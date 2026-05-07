@@ -15,6 +15,11 @@ public class CT02PremiumCalculation {
     private final KidiClient kidiClient = new KidiClient();
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 
+    /** 표준 시장 기준 기본 보험료 (담보 구성 기반 계산 전까지 사용하는 가정치) */
+    private static final long   STANDARD_BASE_PREMIUM = 1_150_000L;
+    /** 보험업법 시행령 제63조에 따른 법정 준비금 적립 비율 */
+    private static final double LEGAL_RESERVE_RATIO   = 0.40;
+
     public void run() {
         System.out.println("\n========================================");
         System.out.println(" CT-02: 보험료를 산출한다");
@@ -119,10 +124,10 @@ public class CT02PremiumCalculation {
             return null;
         }
 
-        long finalPremium   = 1_150_000L;
+        long finalPremium   = STANDARD_BASE_PREMIUM;
         long netPremium     = Math.round(finalPremium * lossRatio / 100.0);
         long expensePremium = finalPremium - netPremium;
-        long reserve        = Math.round(finalPremium * 0.40);
+        long reserve        = Math.round(finalPremium * LEGAL_RESERVE_RATIO);
 
         System.out.println("\n── 담보별 산출 내역 ──────────────────────");
         System.out.printf(" 순보험료    : %,d원  (손해율 %.1f%% 적용)%n", netPremium, lossRatio);
