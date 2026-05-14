@@ -1,11 +1,17 @@
 package domain;
 
+import infra.util.FileStore;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Accident implements Serializable {
     private static final long serialVersionUID = 1L;
     private String accidentId;
-    private String accidentDate;
+    private Date accidentDate;
     private String accidentDetail;
     private String accidentLocation;
     private String reportedBy;
@@ -22,22 +28,11 @@ public class Accident implements Serializable {
     private String regionCode;
 
     public enum AccidentType {
-        COLLISION,       // 충돌사고 (차량 간)
-        REAR_END,        // 추돌사고
-        SINGLE,          // 단독사고
-        HIT_AND_RUN,     // 뺑소니
-        FIRE,            // 차량 화재
-        FLOOD,           // 침수
-        THEFT,           // 도난
-        NATURAL_DISASTER // 자연재해 (태풍·우박 등)
+        COLLISION, REAR_END, SINGLE, HIT_AND_RUN, FIRE, FLOOD, THEFT, NATURAL_DISASTER
     }
 
     public enum SeverityLevel {
-        MINOR,      // 경상 (부상 8~14급)
-        MODERATE,   // 중상 (부상 1~7급)
-        SEVERE,     // 중증
-        FATAL,      // 사망
-        TOTAL_LOSS  // 전손 (차량)
+        MINOR, MODERATE, SEVERE, FATAL, TOTAL_LOSS
     }
 
     public Accident() {}
@@ -47,7 +42,7 @@ public class Accident implements Serializable {
                     String documents, String contractId, String coverageDescription,
                     String coverageLimit, String vehicleInfo, String status) {
         this.accidentId = accidentId;
-        this.accidentDate = accidentDate;
+        try { this.accidentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(accidentDate); } catch (Exception e) { this.accidentDate = null; }
         this.reportedBy = reportedBy;
         this.phone = phone;
         this.description = description;
@@ -71,7 +66,7 @@ public class Accident implements Serializable {
         a.reportedBy          = reportedBy;
         a.phone               = phone;
         a.description         = "보험금 청구";
-        a.accidentDate        = accidentDate;
+        try { a.accidentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(accidentDate); } catch (Exception e) { a.accidentDate = null; }
         a.accidentLocation    = accidentLocation;
         a.accidentDetail      = accidentDetail;
         a.documents           = documents;
@@ -90,8 +85,9 @@ public class Accident implements Serializable {
     public boolean isPending()           { return "미처리".equals(status); }
 
     public boolean updateAccidentDetail(String detail) { this.accidentDetail = detail; return true; }
-    public boolean validateAccident()    { return accidentDate != null && !accidentDate.isEmpty()
-                                              && accidentLocation != null && !accidentLocation.isEmpty(); }
+    public boolean validateAccident() {
+        return accidentDate != null && accidentLocation != null && !accidentLocation.isEmpty();
+    }
 
     /** coverageLimit 문자열("2,000만원")에서 숫자(2000)만 추출 */
     public int getCoverageLimitManwon() {
@@ -104,7 +100,8 @@ public class Accident implements Serializable {
     }
 
     public String getAccidentId() { return accidentId; }
-    public String getAccidentDate() { return accidentDate; }
+    public Date getAccidentDate() { return accidentDate; }
+    public String getAccidentDateDisplay() { return accidentDate != null ? new SimpleDateFormat("yyyy-MM-dd HH:mm").format(accidentDate) : ""; }
     public String getAccidentDetail() { return accidentDetail; }
     public String getAccidentLocation() { return accidentLocation; }
     public String getReportedBy() { return reportedBy; }
@@ -121,7 +118,7 @@ public class Accident implements Serializable {
     public String getRegionCode() { return regionCode; }
 
     public void setAccidentId(String v) { this.accidentId = v; }
-    public void setAccidentDate(String v) { this.accidentDate = v; }
+    public void setAccidentDate(Date v) { this.accidentDate = v; }
     public void setAccidentDetail(String v) { this.accidentDetail = v; }
     public void setAccidentLocation(String v) { this.accidentLocation = v; }
     public void setReportedBy(String v) { this.reportedBy = v; }
@@ -136,4 +133,57 @@ public class Accident implements Serializable {
     public void setVehicleInfo(String v) { this.vehicleInfo = v; }
     public void setExpectedRepairCost(String v) { this.expectedRepairCost = v; }
     public void setRegionCode(String v) { this.regionCode = v; }
+
+    // ── 영속성 ────────────────────────────────────────────────
+    private static final List<Accident> STORE;
+    static {
+        List<Accident> loaded = FileStore.load("accidents.dat");
+        if (loaded != null) { STORE = loaded; }
+        else { STORE = new ArrayList<>(); initDefaults(); }
+    }
+    private static void initDefaults() {
+        Accident a1 = new Accident("ACC-2026-001", "2026-04-19 09:32", "홍길동", "010-1234-5678",
+            "자동차 대물 사고", "서울 강남구 테헤란로", "신호 대기 중 후방 추돌 사고 발생",
+            "사고현장사진.jpg,차량수리견적서.pdf", "CNT-20240315-001", "자동차 대물", "2,000만원",
+            "12가 3456 (현대 소나타)", "미처리");
+        a1.setPersonalInjuryLimit("1,000만원"); a1.setExpectedRepairCost("850,000원"); a1.setRegionCode("SEOUL-01");
+        STORE.add(a1);
+        Accident a2 = new Accident("ACC-2026-002", "2026-04-19 11:15", "김철수", "010-9876-5432",
+            "차량 파손", "경기도 수원시 팔달구", "주차장 내 차량 문 충돌로 인한 파손",
+            "차량파손사진.jpg,수리견적서.pdf", "CNT-20240520-002", "자기차량손해", "3,000만원",
+            "34나 5678 (기아 K5)", "미처리");
+        a2.setPersonalInjuryLimit("2,000만원"); a2.setExpectedRepairCost("1,200,000원"); a2.setRegionCode("GYEONGGI-01");
+        STORE.add(a2);
+        Accident a3 = new Accident("ACC-2026-003", "2026-04-18 14:20", "이영희", "010-5555-1234",
+            "차량 전손", "인천시 부평구 경인로", "교차로 신호 위반으로 인한 정면 충돌",
+            "사고사진.jpg,전손감정서.pdf", "CNT-20231210-003", "자기차량손해", "5,000만원",
+            "56다 9012 (현대 그랜저)", "처리중");
+        a3.setPersonalInjuryLimit("3,000만원"); a3.setExpectedRepairCost("3,500,000원"); a3.setRegionCode("INCHEON-01");
+        STORE.add(a3);
+        FileStore.save("accidents.dat", STORE);
+    }
+    public static List<Accident> findByDateAndStatus(String date, String status) {
+        return STORE.stream()
+            .filter(a -> a.accidentDate != null
+                && new SimpleDateFormat("yyyy-MM-dd").format(a.accidentDate).startsWith(date))
+            .filter(a -> status.isEmpty() || (a.status != null && a.status.equals(status)))
+            .collect(Collectors.toList());
+    }
+    public static List<Accident> findPendingAccidents() {
+        return STORE.stream().filter(a -> "미처리".equals(a.status)).collect(Collectors.toList());
+    }
+    public static Accident findById(String accidentId) {
+        return STORE.stream().filter(a -> a.accidentId.equals(accidentId)).findFirst().orElse(null);
+    }
+    public static Accident findByCustomerName(String name) {
+        return STORE.stream().filter(a -> a.reportedBy.equals(name)).findFirst().orElse(null);
+    }
+    public void save() {
+        STORE.removeIf(a -> a.accidentId.equals(this.accidentId));
+        STORE.add(this);
+        FileStore.save("accidents.dat", STORE);
+    }
+    public static String nextId() {
+        return String.format("ACC-2026-%03d", STORE.size() + 1);
+    }
 }

@@ -3,8 +3,6 @@ package ui.employee;
 import domain.Accident;
 import domain.DamageInvestigation;
 import infra.Context;
-import infra.repository.AccidentRepository;
-import infra.repository.InvestigationRepository;
 
 import java.util.Scanner;
 
@@ -39,7 +37,7 @@ public class CL03DamageInvestigation {
 
     // ── 공통 조사 로직 ────────────────────────────────────────────────────
     private void doInvestigation(String accNo) {
-        Accident accident = AccidentRepository.findById(accNo);
+        Accident accident = Accident.findById(accNo);
 
         while (true) {
             System.out.println("\n[ 현장 조사 폼 - " + accNo + " ]");
@@ -142,11 +140,11 @@ public class CL03DamageInvestigation {
                 ourFault, otherFault, liability,
                 expectedRepairCost, compensationLimit, finalOpinion
             );
-            InvestigationRepository.save(inv);
-            AccidentRepository.updateStatus(accNo, "처리중");
+            inv.save();
+            if (accident != null) { accident.setStatus("처리중"); accident.save(); }
 
             System.out.println("\n┌──────────────────────────────────────────────────────────────┐");
-            System.out.println("│  조사 내역이 저장되었습니다. 일시: " + inv.getSavedAt() + "       │");
+            System.out.println("│  조사 내역이 저장되었습니다. 일시: " + inv.getSavedAtDisplay() + "       │");
             System.out.println("└──────────────────────────────────────────────────────────────┘");
             System.out.println("  → CL-02 손해액 산정 Basic Flow 6번으로 이동합니다.");
 

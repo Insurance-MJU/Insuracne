@@ -3,8 +3,6 @@ package ui.employee;
 import domain.Accident;
 import domain.Claim;
 import infra.Context;
-import infra.repository.AccidentRepository;
-import infra.repository.ClaimRepository;
 
 import java.util.Scanner;
 
@@ -27,14 +25,14 @@ public class CL02DamageAssessment {
             System.out.println("[산정 대상 조회]");
 
             // Step 4: 레포지토리에서 사고 초기 접수 내역 조회
-            Accident accident = AccidentRepository.findById(accNo);
+            Accident accident = Accident.findById(accNo);
 
             System.out.println("\n[ 손해액 산정 폼 - 사고 초기 접수 내역 ]");
             System.out.println("------------------------------------------------------------");
             System.out.println("  접수 번호  : " + accNo);
             System.out.println("  담당자     : " + empNo);
             if (accident != null) {
-                System.out.println("  사고 일시  : " + accident.getAccidentDate());
+                System.out.println("  사고 일시  : " + accident.getAccidentDateDisplay());
                 System.out.println("  사고 유형  : " + accident.getDescription());
                 System.out.println("  사고 장소  : " + accident.getAccidentLocation());
                 System.out.println("  피해 차량  : " + accident.getVehicleInfo());
@@ -110,10 +108,10 @@ public class CL02DamageAssessment {
             System.out.println("[산정 내역 승인]");
 
             // Step 10: 레포지토리에 Claim 지급 정보 저장 및 상태 업데이트
-            Claim claim = ClaimRepository.findByAccidentId(accNo);
+            Claim claim = Claim.findByAccidentId(accNo);
             if (claim != null) {
                 claim.assess(settlement, deductible);
-                ClaimRepository.save(claim);
+                claim.save();
             }
 
             System.out.println("\n[ 산정 내역 승인 완료 ]");

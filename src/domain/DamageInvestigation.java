@@ -1,9 +1,11 @@
 package domain;
 
+import infra.util.FileStore;
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class DamageInvestigation implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -26,7 +28,7 @@ public class DamageInvestigation implements Serializable {
     private String expectedRepairCost;
     private String compensationLimit;
     private String finalOpinion;
-    private String savedAt;
+    private Date savedAt;
 
     public DamageInvestigation() {}
 
@@ -55,11 +57,12 @@ public class DamageInvestigation implements Serializable {
         inv.expectedRepairCost = expectedRepairCost;
         inv.compensationLimit = compensationLimit;
         inv.finalOpinion = finalOpinion;
-        inv.savedAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd.HH:mm:ss"));
+        inv.savedAt = new Date();
         return inv;
     }
 
-    public String getSavedAt() { return savedAt; }
+    public Date getSavedAt() { return savedAt; }
+    public String getSavedAtDisplay() { return savedAt != null ? new SimpleDateFormat("yyyy.MM.dd HH:mm:ss").format(savedAt) : ""; }
 
     public String getAccidentCause() { return accidentCause; }
     public String getClaimId() { return claimId; }
@@ -95,5 +98,20 @@ public class DamageInvestigation implements Serializable {
     public void setExpectedRepairCost(String v) { this.expectedRepairCost = v; }
     public void setCompensationLimit(String v) { this.compensationLimit = v; }
     public void setFinalOpinion(String v) { this.finalOpinion = v; }
-    public void setSavedAt(String v) { this.savedAt = v; }
+    public void setSavedAt(Date v) { this.savedAt = v; }
+
+    // ── 영속성 ────────────────────────────────────────────────
+    private static final List<DamageInvestigation> STORE;
+    static {
+        List<DamageInvestigation> loaded = FileStore.load("investigations.dat");
+        STORE = (loaded != null) ? loaded : new ArrayList<>();
+    }
+    public void save() {
+        STORE.removeIf(i -> i.accidentId.equals(this.accidentId));
+        STORE.add(this);
+        FileStore.save("investigations.dat", STORE);
+    }
+    public static DamageInvestigation findByAccidentId(String accidentId) {
+        return STORE.stream().filter(i -> i.accidentId.equals(accidentId)).findFirst().orElse(null);
+    }
 }

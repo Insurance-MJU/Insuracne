@@ -3,7 +3,6 @@ package ui.customer;
 import domain.Accident;
 import domain.Contract;
 import infra.Context;
-import infra.repository.AccidentRepository;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -93,7 +92,7 @@ public class CS04ClaimRequest {
 
         // Step 12: 사고 접수 후 보상팀 이관
         Accident accident = Accident.report(
-            AccidentRepository.nextId(),
+            Accident.nextId(),
             authName,
             authPhone,
             accidentDate,
@@ -103,12 +102,12 @@ public class CS04ClaimRequest {
             selectedContract
         );
         accident.transferToCompensation();
-        AccidentRepository.save(accident);
+        accident.save();
 
         System.out.println("\n[보험금 청구 완료]");
         System.out.println("------------------------------------------------------------");
         System.out.println(" 접수 번호   : " + accident.getAccidentId());
-        System.out.println(" 사고 일시   : " + accident.getAccidentDate());
+        System.out.println(" 사고 일시   : " + accident.getAccidentDateDisplay());
         System.out.println(" 사고 장소   : " + accident.getAccidentLocation());
         System.out.println(" 경위        : " + accident.getAccidentDetail());
         System.out.println(" 처리 상태   : " + accident.getStatus());

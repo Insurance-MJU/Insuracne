@@ -30,7 +30,7 @@ public class UW01ContractReview {
             System.out.printf(" %-20s %-10s %-25s %-12s %-12s %-10s%n",
                 s.getSubscriptionNo(), s.getApplicantName(), s.getProductName(),
                 NF.format(s.getPremium().getAmount()) + "원",
-                s.getSubscriptionDate(), s.getStatus().getLabel());
+                s.getSubscriptionDateDisplay(), s.getStatus().getLabel());
         }
         System.out.println("------------------------------------------------------------");
 
@@ -99,7 +99,7 @@ public class UW01ContractReview {
             NF.format(report.getSurchargeAmount().getAmount()));
         System.out.printf(" 합계 보험료  : %s원%n", NF.format(report.getTotalPremium().getAmount()));
         System.out.println(" 심사역       : " + report.getReviewerName());
-        System.out.println(" 심사 일시    : " + report.getReviewDate());
+        System.out.println(" 심사 일시    : " + report.getReviewDateDisplay());
         System.out.println(" 심사 의견    : " + report.getReviewOpinion());
         System.out.println("------------------------------------------------------------");
         System.out.println(" 1. 인수 승인");

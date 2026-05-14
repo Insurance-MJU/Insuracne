@@ -1,9 +1,8 @@
 package ui.employee;
 
+import domain.Accident;
 import domain.Claim;
 import infra.Context;
-import infra.repository.AccidentRepository;
-import infra.repository.ClaimRepository;
 
 import java.util.List;
 import java.util.Scanner;
@@ -17,7 +16,7 @@ public class CL04InsurancePayment {
         System.out.println("========================================");
 
         // Step 1: 레포지토리에서 지급 대기 목록 조회
-        List<Claim> waitingList = ClaimRepository.findAwaitingPayment();
+        List<Claim> waitingList = Claim.findAwaitingPayment();
 
         System.out.println("\n[ 지급 대기 중인 접수 목록 ]");
         System.out.println("------------------------------------------------------------");
@@ -39,7 +38,7 @@ public class CL04InsurancePayment {
         System.out.println("[지급 정보 확인]");
 
         // 레포지토리에서 청구 정보 조회
-        Claim claim = ClaimRepository.findByAccidentId(accNo);
+        Claim claim = Claim.findByAccidentId(accNo);
 
         // Steps 3~11: E1 발생 시 Step 3부터 재시작
         while (true) {
@@ -124,8 +123,9 @@ public class CL04InsurancePayment {
             // Step 11: 레포지토리에 지급 완료 상태 저장
             if (claim != null) {
                 claim.completePayment(bank, accountNo);
-                ClaimRepository.save(claim);
-                AccidentRepository.updateStatus(accNo, "완료");
+                claim.save();
+                Accident accident = Accident.findById(accNo);
+                if (accident != null) { accident.setStatus("처리완료"); accident.save(); }
             }
 
             System.out.println("\n[ 사고 건 지급 종결 내역 ]");

@@ -83,7 +83,7 @@ public class UW02RiskAnalysis {
         } else {
             for (CreditInfo.AccidentRecord acc : creditInfo.getAccidentHistory()) {
                 System.out.printf(" 최근 3년 사고이력 : %s - %s (%s원)%n",
-                    acc.getDate(), acc.getDescription(),
+                    acc.getDateDisplay(), acc.getDescription(),
                     NF.format(acc.getAmount().getAmount()));
             }
         }

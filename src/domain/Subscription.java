@@ -2,6 +2,8 @@ package domain;
 
 import domain.common.Money;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Subscription implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -29,7 +31,7 @@ public class Subscription implements Serializable {
     private String productName;
     private Money premium;
     private Money basePremium;
-    private String subscriptionDate;
+    private Date subscriptionDate;
     private Status status;
     private String occupation;
     private int age;
@@ -54,7 +56,7 @@ public class Subscription implements Serializable {
         s.productName          = productName;
         s.premium              = premium;
         s.basePremium          = basePremium;
-        s.subscriptionDate     = subscriptionDate;
+        try { s.subscriptionDate = new SimpleDateFormat("yyyy-MM-dd").parse(subscriptionDate); } catch (Exception e) { s.subscriptionDate = new Date(); }
         s.status               = Status.PENDING_REVIEW;
         s.occupation           = occupation;
         s.age                  = age;
@@ -91,7 +93,8 @@ public class Subscription implements Serializable {
     public String getProductName()          { return productName; }
     public Money getPremium()               { return premium; }
     public Money getBasePremium()           { return basePremium; }
-    public String getSubscriptionDate()     { return subscriptionDate; }
+    public Date getSubscriptionDate()        { return subscriptionDate; }
+    public String getSubscriptionDateDisplay() { return subscriptionDate != null ? new SimpleDateFormat("yyyy-MM-dd").format(subscriptionDate) : ""; }
     public Status getStatus()               { return status; }
     public String getOccupation()           { return occupation; }
     public int getAge()                     { return age; }
