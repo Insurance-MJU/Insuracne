@@ -12,7 +12,7 @@ public class DriverScope implements Serializable {
     private Party familyMember;  // 가족한정 시 등록된 가족 구성원
 
     public enum ScopeType {
-        SELF("본인한정"), FAMILY("가족한정"), ALL("전가족");
+        SELF("본인한정"), FAMILY("가족한정"), ALL("누구나");
 
         private final String label;
         ScopeType(String label) { this.label = label; }
