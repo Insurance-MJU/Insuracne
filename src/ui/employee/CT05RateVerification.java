@@ -4,13 +4,11 @@ import domain.product.Product;
 import domain.product.ProductDocument;
 import infra.Context;
 import infra.external.KidiClient;
-import infra.repository.ProductRepository;
 import infra.util.DocumentUploadHelper;
 import java.util.*;
 
 public class CT05RateVerification {
     private final Scanner sc = Context.getInstance().scanner();
-    private final ProductRepository productRepo = new ProductRepository();
     private final KidiClient kidiClient = new KidiClient();
 
     private static final String[] REQUIRED_DOCS = {"요율 산출 근거서", "담보별 기준 순보험료 산출표"};
@@ -74,7 +72,7 @@ public class CT05RateVerification {
 
         // ── Step 6: 요율확인서 업로드 ────────────────────────
         System.out.println("\n[안내] 보험개발원으로부터 요율확인서를 수령한 후 업로드하십시오.");
-        String confirmPath = DocumentUploadHelper.inputFilePath(sc, "요율확인서");
+        String confirmPath = DocumentUploadHelper.inputFilePath(sc, ProductDocument.DocType.RATE_VERIFICATION.getLabel());
         if (confirmPath == null) return false;
 
         System.out.print("\n[저장] (Enter): ");
@@ -83,7 +81,7 @@ public class CT05RateVerification {
         // 요율확인서 ProductDocument 저장
         product.addDocument(ProductDocument.createReceived(
             product.getProductId(), ProductDocument.DocType.RATE_VERIFICATION,
-            "요율확인서", confirmPath));
+            ProductDocument.DocType.RATE_VERIFICATION.getLabel(), confirmPath));
 
         // ── Step 7: 인가신청서 등록 안내 ─────────────────────
         System.out.println("\n[안내] 요율확인서가 등록되었습니다. 인가신청서를 등록하시겠습니까?");
@@ -98,7 +96,7 @@ public class CT05RateVerification {
     }
 
     private Product selectProduct() {
-        List<Product> products = productRepo.findAll();
+        List<Product> products = Product.findAll();
         System.out.println("\n[등록된 상품 목록]");
         for (int i = 0; i < products.size(); i++) {
             Product p = products.get(i);

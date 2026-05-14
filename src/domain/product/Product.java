@@ -1,12 +1,114 @@
 package domain.product;
 
+import infra.util.FileStore;
+
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 public class Product implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    // ── 정적 저장소 ───────────────────────────────────────────
+    private static final List<Product> STORE;
+
+    static {
+        List<Product> loaded = FileStore.load("products.dat");
+        if (loaded != null) {
+            STORE = loaded;
+        } else {
+            STORE = new ArrayList<>();
+            initDefaults();
+        }
+    }
+
+    private static void initDefaults() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        Product personal = new Product();
+        personal.productId = "PROD-001"; personal.productCode = "CAR-2026-MZ-P";
+        personal.productName = "MZ세대 다이렉트 개인용자동차보험";
+        personal.description = "MZ 세대를 위한 다이렉트 자동차보험입니다.";
+        personal.target = Target.PERSONAL; personal.lineOfBusiness = LineOfBusiness.AUTO;
+        personal.status = Status.ON_SALE; personal.createdAt = new Date();
+        personal.riders = new ArrayList<>(Arrays.asList(
+            rider("PR-001", "PROD-001", "RC-MILEAGE", "RIDER-001", "마일리지 특약", null),
+            rider("PR-002", "PROD-001", "RC-TMAP",    "RIDER-002", "티맵안전운전 할인특약", null)
+        ));
+        personal.documents = new ArrayList<>(); personal.coverages = new ArrayList<>();
+        try { personal.saleStartDate = sdf.parse("2026-04-23"); personal.saleEndDate = sdf.parse("2026-10-01"); } catch (Exception ignored) {}
+        STORE.add(personal);
+
+        Product business = new Product();
+        business.productId = "PROD-002"; business.productCode = "CAR-2026-MZ-B";
+        business.productName = "MZ세대 다이렉트 업무용자동차보험";
+        business.description = "업무용 차량을 위한 다이렉트 자동차보험입니다.";
+        business.target = Target.BUSINESS; business.lineOfBusiness = LineOfBusiness.AUTO;
+        business.status = Status.ON_SALE; business.createdAt = new Date();
+        business.riders = new ArrayList<>(); business.documents = new ArrayList<>(); business.coverages = new ArrayList<>();
+        try { business.saleStartDate = sdf.parse("2026-04-23"); business.saleEndDate = sdf.parse("2026-10-01"); } catch (Exception ignored) {}
+        STORE.add(business);
+
+        Product commercial = new Product();
+        commercial.productId = "PROD-003"; commercial.productCode = "CAR-2026-MZ-C";
+        commercial.productName = "MZ세대 다이렉트 영업용자동차보험";
+        commercial.description = "영업용 차량을 위한 다이렉트 자동차보험입니다.";
+        commercial.target = Target.COMMERCIAL; commercial.lineOfBusiness = LineOfBusiness.AUTO;
+        commercial.status = Status.DISCONTINUED; commercial.createdAt = new Date();
+        commercial.riders = new ArrayList<>(); commercial.documents = new ArrayList<>(); commercial.coverages = new ArrayList<>();
+        try { commercial.saleStartDate = sdf.parse("2026-01-01"); commercial.saleEndDate = sdf.parse("2026-04-01"); } catch (Exception ignored) {}
+        STORE.add(commercial);
+
+        Product design = new Product();
+        design.productId = "PROD-004"; design.productCode = "CAR-2026-MZ";
+        design.productName = "MZ 세대 다이렉트 차보험";
+        design.description = "MZ 세대를 위한 신규 설계 자동차보험.";
+        design.target = Target.PERSONAL; design.lineOfBusiness = LineOfBusiness.AUTO;
+        design.status = Status.DESIGN_COMPLETE; design.createdAt = new Date();
+        design.riders = new ArrayList<>(); design.documents = new ArrayList<>(); design.coverages = new ArrayList<>();
+        try { design.saleStartDate = sdf.parse("2026-05-01"); design.saleEndDate = sdf.parse("2027-04-30"); } catch (Exception ignored) {}
+        STORE.add(design);
+
+        FileStore.save("products.dat", STORE);
+    }
+
+    private static ProductRider rider(String prId, String prodId, String code, String riderId, String name, Double rate) {
+        ProductRider pr = new ProductRider();
+        pr.setProductRiderId(prId); pr.setProductId(prodId);
+        pr.setRiderCode(code); pr.setRiderId(riderId);
+        pr.setRiderName(name); pr.setDiscountRate(rate);
+        return pr;
+    }
+
+    public static List<Product> findAll() {
+        return Collections.unmodifiableList(STORE);
+    }
+
+    public static Product findById(String productId) {
+        return STORE.stream()
+            .filter(p -> p.getProductId().equals(productId))
+            .findFirst().orElse(null);
+    }
+
+    public static boolean existsByCode(String code) {
+        return STORE.stream().anyMatch(p -> code.equals(p.getProductCode()));
+    }
+
+    public static void save(Product p) {
+        for (int i = 0; i < STORE.size(); i++) {
+            if (STORE.get(i).getProductId().equals(p.getProductId())) {
+                STORE.set(i, p);
+                FileStore.save("products.dat", STORE);
+                return;
+            }
+        }
+        STORE.add(p);
+        FileStore.save("products.dat", STORE);
+    }
     private List<ProductCoverage> coverages;
     private Date createdAt;
     private String description;
@@ -54,6 +156,8 @@ public class Product implements Serializable {
     // ── 정적 팩토리: 신규 상품 설계 ──────────────────────────
     public static Product design(String productCode, String productName, String description,
                                   Target target, Date saleStart, Date saleEnd) {
+        if (existsByCode(productCode))
+            throw new IllegalArgumentException("이미 사용 중인 상품코드입니다: " + productCode);
         Product p = new Product();
         p.productId      = "PROD-" + System.currentTimeMillis();
         p.productCode    = productCode;
@@ -88,7 +192,9 @@ public class Product implements Serializable {
     public void completeDesign()   { this.status = Status.DESIGN_COMPLETE; }
     public void applyForApproval() { this.status = Status.APPROVAL_PENDING; }
     public void completeApproval() { this.status = Status.APPROVED; }
+    public void rejectApproval()   { this.status = Status.DESIGN_COMPLETE; }  // 인가 거절 → 재설계
     public void applySalePermit()  { this.status = Status.SALE_PENDING; }
+    public void rejectSale()       { this.status = Status.APPROVED; }         // 판매 거절 → 인가완료로 복귀
 
     /** 자동차보험 표준 담보 목록 문자열 — 의무 담보(대인I) 포함 전 담보 */
     public String getDefaultCoverageDescription() {

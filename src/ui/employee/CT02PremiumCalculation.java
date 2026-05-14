@@ -1,9 +1,9 @@
 package ui.employee;
 
+import domain.PremiumCalculation;
 import domain.product.Product;
 import infra.Context;
 import infra.external.KidiClient;
-import infra.repository.ProductRepository;
 import domain.ProfitabilityCalculator;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -11,7 +11,6 @@ import java.util.*;
 
 public class CT02PremiumCalculation {
     private final Scanner sc = Context.getInstance().scanner();
-    private final ProductRepository productRepo = new ProductRepository();
     private final KidiClient kidiClient = new KidiClient();
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -25,7 +24,7 @@ public class CT02PremiumCalculation {
         System.out.println(" CT-02: 보험료를 산출한다");
         System.out.println("========================================");
 
-        List<Product> products = productRepo.findAll();
+        List<Product> products = Product.findAll();
         System.out.println("\n[상품 목록]");
         for (int i = 0; i < products.size(); i++) {
             Product p = products.get(i);
@@ -44,11 +43,11 @@ public class CT02PremiumCalculation {
         Product product = products.get(idx);
         List<String> defaultCoverages = Arrays.asList("대인배상 I", "대인배상 II", "대물배상");
 
-        long[] result = runAsInclude(product.getProductName(), defaultCoverages, product.getSaleEndDate());
+        PremiumCalculation.PricingResult result = runAsInclude(product.getProductName(), defaultCoverages, product.getSaleEndDate());
         if (result != null) {
             System.out.println("\n========================================");
-            System.out.printf(" 최종 확정 보험료   : %,d원%n", result[0]);
-            System.out.printf(" 법정 준비금 필요액 : %,d원%n", result[1]);
+            System.out.printf(" 최종 확정 보험료   : %,d원%n", result.getFinalPremium());
+            System.out.printf(" 법정 준비금 필요액 : %,d원%n", result.getReserve());
             System.out.println("========================================");
         }
         returnToMenu();
@@ -56,9 +55,9 @@ public class CT02PremiumCalculation {
 
     /**
      * CT-01에 의해 include.
-     * @return long[]{finalPremium, reserve} 또는 null(취소/오류)
+     * @return PricingResult
      */
-    public long[] runAsInclude(String productName, List<String> selectedCoverages, Date saleEndDate) {
+    public PremiumCalculation.PricingResult runAsInclude(String productName, List<String> selectedCoverages, Date saleEndDate) {
         System.out.println("\n========================================");
         System.out.println(" CT-02: 보험료를 산출한다");
         System.out.println("========================================");
@@ -174,7 +173,7 @@ public class CT02PremiumCalculation {
         System.out.println("└──────────────────────────────────────────────────────────┘");
         System.out.println("(CT-01의 Basic Flow 10번으로 돌아갑니다.)");
 
-        return new long[]{finalPremium, reserve};
+        return new PremiumCalculation.PricingResult(finalPremium, reserve);
     }
 
     private void returnToMenu() {
