@@ -1,6 +1,7 @@
 package ui.employee;
 
 import domain.Accident;
+import domain.AccidentStatus;
 import domain.Claim;
 import domain.ClaimStatus;
 import domain.Employee;
@@ -145,7 +146,7 @@ public class CL01AccidentRegistration {
             );
             claim.setAssignedEmployee(empNo);
             claim.save();
-            accident.setStatus("처리중");
+            accident.setStatus(AccidentStatus.IN_PROGRESS);
             accident.save();
         }
 

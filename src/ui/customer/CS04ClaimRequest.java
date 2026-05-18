@@ -100,7 +100,7 @@ public class CS04ClaimRequest {
         System.out.println(" 사고 일시   : " + accident.getAccidentDateDisplay());
         System.out.println(" 사고 장소   : " + accident.getAccidentLocation());
         System.out.println(" 경위        : " + accident.getAccidentDetail());
-        System.out.println(" 처리 상태   : " + accident.getStatus());
+        System.out.println(" 처리 상태   : " + accident.getStatusLabel());
         System.out.println(" 안내        : 담당자가 배정되면 연락드리겠습니다. (1~3 영업일 소요)");
         System.out.println("------------------------------------------------------------");
         System.out.println("\n보험금 청구가 완료되었습니다.");

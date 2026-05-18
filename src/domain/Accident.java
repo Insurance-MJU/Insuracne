@@ -14,7 +14,7 @@ public class Accident implements Serializable {
     private String accidentLocation;
     private String reportedBy;
     private String phone;
-    private String status;
+    private AccidentStatus status;
     private String description;
     private String documents;
     private String contractId;
@@ -32,7 +32,7 @@ public class Accident implements Serializable {
     public Accident(String accidentId, String accidentDate, String reportedBy, String phone,
                     String description, String accidentLocation, String accidentDetail,
                     String documents, String contractId, String coverageDescription,
-                    Money coverageLimit, String vehicleInfo, String status) {
+                    Money coverageLimit, String vehicleInfo, AccidentStatus status) {
         this.accidentId = accidentId;
         try { this.accidentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(accidentDate); } catch (Exception e) { this.accidentDate = null; }
         this.reportedBy = reportedBy;
@@ -74,7 +74,7 @@ public class Accident implements Serializable {
         a.coverageDescription = contract.getCoveragesDescription();
         a.coverageLimit       = parseMoneyString(contract.getCoverageLimit());
         a.vehicleInfo         = contract.getCarNumber();
-        a.status              = "미처리";
+        a.status              = AccidentStatus.PENDING;
         return a;
     }
 
@@ -87,10 +87,10 @@ public class Accident implements Serializable {
     }
 
     // ── 비즈니스 메서드: 상태 전이 ────────────────────────────
-    public void transferToCompensation() { this.status = "보상팀 이관"; }
-    public void startProcessing()        { this.status = "처리중"; }
-    public void complete()               { this.status = "처리완료"; }
-    public boolean isPending()           { return "미처리".equals(status); }
+    public void transferToCompensation() { this.status = AccidentStatus.TRANSFERRED; }
+    public void startProcessing()        { this.status = AccidentStatus.IN_PROGRESS; }
+    public void complete()               { this.status = AccidentStatus.CLOSED; }
+    public boolean isPending()           { return status == AccidentStatus.PENDING; }
 
     public boolean updateAccidentDetail(String detail) { this.accidentDetail = detail; return true; }
     public boolean validateAccident() {
@@ -109,7 +109,8 @@ public class Accident implements Serializable {
     public String getAccidentLocation() { return accidentLocation; }
     public String getReportedBy() { return reportedBy; }
     public String getPhone() { return phone; }
-    public String getStatus() { return status; }
+    public AccidentStatus getStatus() { return status; }
+    public String getStatusLabel() { return status != null ? status.getLabel() : ""; }
     public String getDescription() { return description; }
     public String getDocuments() { return documents; }
     public String getContractId() { return contractId; }
@@ -136,7 +137,7 @@ public class Accident implements Serializable {
     public void setAccidentLocation(String v) { this.accidentLocation = v; }
     public void setReportedBy(String v) { this.reportedBy = v; }
     public void setPhone(String v) { this.phone = v; }
-    public void setStatus(String v) { this.status = v; }
+    public void setStatus(AccidentStatus v) { this.status = v; }
     public void setDescription(String v) { this.description = v; }
     public void setDocuments(String v) { this.documents = v; }
     public void setContractId(String v) { this.contractId = v; }
