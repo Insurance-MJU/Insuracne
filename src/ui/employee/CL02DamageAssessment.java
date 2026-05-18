@@ -3,6 +3,7 @@ package ui.employee;
 import domain.Accident;
 import domain.Claim;
 import domain.Contract;
+import domain.DamageInvestigation;
 import domain.SelectedCoverage;
 import domain.common.Money;
 import infra.Context;
@@ -144,6 +145,10 @@ public class CL02DamageAssessment {
                 Money settlementMoney = new Money(settlement * 10_000L, "KRW");
                 Money deductibleMoney = new Money(deductible * 10_000L, "KRW");
                 claim.assess(settlementMoney, deductibleMoney);
+                DamageInvestigation inv = DamageInvestigation.findByAccidentId(accNo);
+                if (inv != null && claim.getDamageAssessment() != null) {
+                    claim.getDamageAssessment().setInvestigation(inv);
+                }
                 claim.save();
             }
 

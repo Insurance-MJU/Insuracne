@@ -17,7 +17,6 @@ public class Claim implements Serializable {
     private ClaimType claimType;
     private String assignedEmployee;
     private DamageAssessment damageAssessment;
-    private ClaimPayment claimPayment;
 
     public Claim() {}
 
@@ -44,9 +43,10 @@ public class Claim implements Serializable {
         this.claimStatus = ClaimStatus.PAYMENT_PENDING;
     }
 
-    /** 보험금 지급 완료: 계좌 정보 저장 후 지급완료 상태로 전환 */
+    /** 보험금 지급 완료: DamageAssessment에 지급 정보 저장 후 지급완료 상태로 전환 */
     public void completePayment(String bank, String accountNo) {
-        this.claimPayment = new ClaimPayment(bank, accountNo);
+        if (this.damageAssessment == null) this.damageAssessment = new DamageAssessment();
+        this.damageAssessment.completePayment(bank, accountNo);
         this.claimStatus = ClaimStatus.CLOSED;
     }
 
@@ -68,11 +68,11 @@ public class Claim implements Serializable {
     public ClaimType getClaimType() { return claimType; }
     public String getAssignedEmployee() { return assignedEmployee; }
     public DamageAssessment getDamageAssessment() { return damageAssessment; }
-    public ClaimPayment getClaimPayment() { return claimPayment; }
+    public ClaimPayment getClaimPayment() { return damageAssessment != null ? damageAssessment.getClaimPayment() : null; }
     public Money getSettlement() { return damageAssessment != null ? damageAssessment.getSettlement() : null; }
     public Money getCompensationAmount() { return damageAssessment != null ? damageAssessment.getCompensationAmount() : null; }
-    public String getBankName() { return claimPayment != null ? claimPayment.getBankName() : null; }
-    public String getAccountNumber() { return claimPayment != null ? claimPayment.getAccountNumber() : null; }
+    public String getBankName() { return getClaimPayment() != null ? getClaimPayment().getBankName() : null; }
+    public String getAccountNumber() { return getClaimPayment() != null ? getClaimPayment().getAccountNumber() : null; }
 
     // ── DAO 위임 ──────────────────────────────────────────────
     public static Claim findByAccidentId(String accidentId)  { return infra.dao.ClaimDao.getInstance().findByAccidentId(accidentId); }
@@ -92,5 +92,4 @@ public class Claim implements Serializable {
     public void setClaimType(ClaimType v) { this.claimType = v; }
     public void setAssignedEmployee(String v) { this.assignedEmployee = v; }
     public void setDamageAssessment(DamageAssessment v) { this.damageAssessment = v; }
-    public void setClaimPayment(ClaimPayment v) { this.claimPayment = v; }
 }

@@ -53,7 +53,9 @@ public class ClaimDao {
         String bankName = rs.getString("bank_name");
         String accountNo = rs.getString("account_number");
         if (bankName != null && !bankName.isEmpty()) {
-            c.setClaimPayment(new ClaimPayment(bankName, accountNo));
+            DamageAssessment da = c.getDamageAssessment();
+            if (da == null) { da = new DamageAssessment(); c.setDamageAssessment(da); }
+            da.setClaimPayment(new ClaimPayment(bankName, accountNo));
         }
 
         return c;

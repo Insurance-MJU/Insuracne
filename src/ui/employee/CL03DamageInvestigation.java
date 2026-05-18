@@ -2,7 +2,6 @@ package ui.employee;
 
 import domain.Accident;
 import domain.AccidentStatus;
-import domain.Claim;
 import domain.DamageInvestigation;
 import domain.InjuryGrade;
 import domain.common.Money;
@@ -143,11 +142,10 @@ public class CL03DamageInvestigation {
             System.out.println("[조사 완료 및 저장]");
 
             // Step 10: 저장
-            Claim claim = Claim.findByAccidentId(accNo);
             DamageInvestigation inv = DamageInvestigation.create(
                 accNo, opinion, damageCode, injuryGrade,
                 ourFault, otherFault, liability,
-                expectedRepairCostMoney, compensationLimitMoney, finalOpinion, claim
+                expectedRepairCostMoney, compensationLimitMoney, finalOpinion
             );
             inv.save();
             if (accident != null) { accident.setStatus(AccidentStatus.IN_PROGRESS); accident.save(); }

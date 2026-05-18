@@ -8,7 +8,6 @@ import java.util.Date;
 public class DamageInvestigation implements Serializable {
     private static final long serialVersionUID = 1L;
     private String accidentCause;
-    private Claim claim;
     private String damageDetail;
     private Date investigationDate;
     private String investigationId;
@@ -43,10 +42,9 @@ public class DamageInvestigation implements Serializable {
     /** 손해조사 결과를 한 번에 생성하는 팩토리 메서드 */
     public static DamageInvestigation create(String accidentId, String opinion, String damageCode,
             InjuryGrade injuryGrade, int ourFault, int otherFault, String liability,
-            Money expectedRepairCost, Money compensationLimit, String finalOpinion, Claim claim) {
+            Money expectedRepairCost, Money compensationLimit, String finalOpinion) {
         DamageInvestigation inv = new DamageInvestigation();
         inv.accidentId = accidentId;
-        inv.claim = claim;
         inv.opinion = opinion;
         inv.damageCode = damageCode;
         inv.injuryGrade = injuryGrade;
@@ -64,7 +62,6 @@ public class DamageInvestigation implements Serializable {
     public String getSavedAtDisplay() { return savedAt != null ? new SimpleDateFormat("yyyy.MM.dd HH:mm:ss").format(savedAt) : ""; }
 
     public String getAccidentCause() { return accidentCause; }
-    public Claim getClaim() { return claim; }
     public String getDamageDetail() { return damageDetail; }
     public Date getInvestigationDate() { return investigationDate; }
     public String getInvestigationId() { return investigationId; }
@@ -86,7 +83,6 @@ public class DamageInvestigation implements Serializable {
     public static DamageInvestigation findByAccidentId(String accidentId)  { return infra.dao.DamageInvestigationDao.getInstance().findByAccidentId(accidentId); }
 
     public void setAccidentCause(String v) { this.accidentCause = v; }
-    public void setClaim(Claim v) { this.claim = v; }
     public void setDamageDetail(String v) { this.damageDetail = v; }
     public void setInvestigationId(String v) { this.investigationId = v; }
     public void setInvestigationResult(String v) { this.investigationResult = v; }
