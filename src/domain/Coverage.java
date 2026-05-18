@@ -18,7 +18,7 @@ public class Coverage {
     private List<Coverage> requiredCoverages;
 
     // ── DAO 위임 ──────────────────────────────────────────────
-    public static java.util.List<Coverage> findAll()          { return infra.dao.CoverageDao.getInstance().findAll(); }
+    public static List<Coverage> findAll()          { return infra.dao.CoverageDao.getInstance().findAll(); }
     public static Coverage findById(String coverageId)        { return infra.dao.CoverageDao.getInstance().findById(coverageId); }
 
     public boolean hasDeductible() { return deductible != null; }
