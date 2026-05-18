@@ -19,7 +19,7 @@ public class DamageInvestigation implements Serializable {
     private String accidentId;
     private String opinion;
     private String damageCode;
-    private int injuryGrade;
+    private InjuryGrade injuryGrade;
     private int ourFault;
     private int otherFault;
     private String liability;
@@ -42,7 +42,7 @@ public class DamageInvestigation implements Serializable {
 
     /** 손해조사 결과를 한 번에 생성하는 팩토리 메서드 */
     public static DamageInvestigation create(String accidentId, String opinion, String damageCode,
-            int injuryGrade, int ourFault, int otherFault, String liability,
+            InjuryGrade injuryGrade, int ourFault, int otherFault, String liability,
             Money expectedRepairCost, Money compensationLimit, String finalOpinion, Claim claim) {
         DamageInvestigation inv = new DamageInvestigation();
         inv.accidentId = accidentId;
@@ -73,7 +73,7 @@ public class DamageInvestigation implements Serializable {
     public String getAccidentId() { return accidentId; }
     public String getOpinion() { return opinion; }
     public String getDamageCode() { return damageCode; }
-    public int getInjuryGrade() { return injuryGrade; }
+    public InjuryGrade getInjuryGrade() { return injuryGrade; }
     public int getOurFault() { return ourFault; }
     public int getOtherFault() { return otherFault; }
     public String getLiability() { return liability; }
@@ -94,7 +94,7 @@ public class DamageInvestigation implements Serializable {
     public void setAccidentId(String v) { this.accidentId = v; }
     public void setOpinion(String v) { this.opinion = v; }
     public void setDamageCode(String v) { this.damageCode = v; }
-    public void setInjuryGrade(int v) { this.injuryGrade = v; }
+    public void setInjuryGrade(InjuryGrade v) { this.injuryGrade = v; }
     public void setOurFault(int v) { this.ourFault = v; }
     public void setOtherFault(int v) { this.otherFault = v; }
     public void setLiability(String v) { this.liability = v; }
