@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import static domain.Deductible.fixedAmount;
+import static domain.Deductible.none;
 
 public class ContractDao {
     private static final ContractDao INSTANCE = new ContractDao();
@@ -21,22 +23,53 @@ public class ContractDao {
     }
 
     private static void initDefaults() {
-        STORE.add(buildContract("IN-2026-001", "CNT-20240315-001",
+        Contract c1 = buildContract("IN-2026-001", "CNT-20240315-001",
             "MZ세대 다이렉트 개인용자동차보험",
             ContractStatus.ACTIVE, "2026-04-01", "2026-04-01", "2027-04-01",
             2_509_200L, "대인배상I, 대인배상II, 대물배상", "마일리지 특약",
-            "64마0866", "박수현"));
-        STORE.add(buildContract("IN-2025-002", "CNT-20240520-002",
+            "64마0866", "박수현");
+        c1.setSelectedCoverages(Arrays.asList(
+            cov("COV-001", "대인배상 I",   true,  none()),
+            cov("COV-002", "대인배상 II",  false, none()),
+            cov("COV-003", "대물배상",     false, none())
+        ));
+        STORE.add(c1);
+
+        Contract c2 = buildContract("IN-2025-002", "CNT-20240520-002",
             "MZ세대 다이렉트 개인용자동차보험",
             ContractStatus.ACTIVE, "2025-06-15", "2025-06-15", "2026-06-15",
             1_980_000L, "대인배상I, 대인배상II, 대물배상, 자기차량손해", "블랙박스 할인특약",
-            "12가3456", "김직원"));
-        STORE.add(buildContract("IN-2023-003", "CNT-20231210-003",
+            "12가3456", "김직원");
+        c2.setSelectedCoverages(Arrays.asList(
+            cov("COV-001", "대인배상 I",    true,  none()),
+            cov("COV-002", "대인배상 II",   false, none()),
+            cov("COV-003", "대물배상",      false, none()),
+            cov("COV-005", "자기차량손해",  false, fixedAmount(new Money(200_000L, "KRW")))
+        ));
+        STORE.add(c2);
+
+        Contract c3 = buildContract("IN-2023-003", "CNT-20231210-003",
             "MZ세대 다이렉트 개인용자동차보험",
             ContractStatus.EXPIRED, "2023-12-10", "2023-12-10", "2024-12-10",
             2_100_000L, "대인배상I, 대물배상, 자기차량손해", "없음",
-            "56다9012", "이영희"));
+            "56다9012", "이영희");
+        c3.setSelectedCoverages(Arrays.asList(
+            cov("COV-001", "대인배상 I",    true,  none()),
+            cov("COV-003", "대물배상",      false, none()),
+            cov("COV-005", "자기차량손해",  false, fixedAmount(new Money(200_000L, "KRW")))
+        ));
+        STORE.add(c3);
+
         FileStore.save("contracts.dat", STORE);
+    }
+
+    private static SelectedCoverage cov(String masterId, String name, boolean mandatory, Deductible ded) {
+        SelectedCoverage sc = new SelectedCoverage();
+        sc.setCoverageMasterId(masterId);
+        sc.setCoverageName(name);
+        sc.setMandatory(mandatory);
+        sc.setDeductible(ded);
+        return sc;
     }
 
     private static Contract buildContract(String policyNo, String contractId, String productName,
@@ -64,6 +97,10 @@ public class ContractDao {
 
     public Contract findByPolicyNo(String policyNo) {
         return STORE.stream().filter(c -> c.getPolicyNo().equals(policyNo)).findFirst().orElse(null);
+    }
+
+    public Contract findByContractId(String contractId) {
+        return STORE.stream().filter(c -> c.getContractId().equals(contractId)).findFirst().orElse(null);
     }
 
     public List<Contract> findByCondition(String holderName, String periodChoice, String statusChoice) {

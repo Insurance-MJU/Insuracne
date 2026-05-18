@@ -29,6 +29,7 @@ public class Contract implements Serializable {
     private String coverageLimit;
     private String ridersDescription;
     private String productName;
+    private String subscriptionNo;
 
     // ── 정적 팩토리: 신규 계약 발행 ──────────────────────────
     public static Contract issue(String policyNo, String contractId, String productName,
@@ -97,8 +98,9 @@ public class Contract implements Serializable {
     public String getProductName()                { return productName; }
 
     // ── DAO 위임 ──────────────────────────────────────────────
-    public static java.util.List<Contract> findAll()         { return infra.dao.ContractDao.getInstance().findAll(); }
-    public static Contract findByPolicyNo(String policyNo)   { return infra.dao.ContractDao.getInstance().findByPolicyNo(policyNo); }
+    public static java.util.List<Contract> findAll()              { return infra.dao.ContractDao.getInstance().findAll(); }
+    public static Contract findByPolicyNo(String policyNo)        { return infra.dao.ContractDao.getInstance().findByPolicyNo(policyNo); }
+    public static Contract findByContractId(String contractId)    { return infra.dao.ContractDao.getInstance().findByContractId(contractId); }
     public static java.util.List<Contract> findByCondition(String holderName, String periodChoice, String statusChoice) {
         return infra.dao.ContractDao.getInstance().findByCondition(holderName, periodChoice, statusChoice);
     }
@@ -126,4 +128,7 @@ public class Contract implements Serializable {
     public void setCoverageLimit(String v)                { this.coverageLimit = v; }
     public void setRidersDescription(String v)            { this.ridersDescription = v; }
     public void setProductName(String v)                  { this.productName = v; }
+    public void setSubscriptionNo(String v)               { this.subscriptionNo = v; }
+
+    public String getSubscriptionNo()                     { return subscriptionNo; }
 }

@@ -1,7 +1,10 @@
 package ui.employee;
 
+import domain.Contract;
+import domain.Party;
 import domain.RiskAnalysisReport;
 import domain.Subscription;
+import domain.common.Money;
 import infra.Context;
 
 import java.text.NumberFormat;
@@ -109,13 +112,28 @@ public class UW01ContractReview {
         // Step 9: 인수 결정 — 도메인 메서드로 상태 전이
         switch (decision) {
             case "1":
-                // Step 10: 인수 승인
+                // Step 10: 인수 승인 → 계약 발행
                 sub.approve();
                 Subscription.save(sub);
-                int seq = Integer.parseInt(sub.getSubscriptionNo().split("-")[1]);
-                String contractNo = String.format("CN-2026-%04d", 9980 + seq);
+
+                Party holder = new Party();
+                holder.setPartyId("PARTY-" + sub.getSubscriptionNo());
+                holder.setName(sub.getApplicantName());
+
+                Money finalPremium = report.getTotalPremium();
+                String policyNo = Contract.nextPolicyNo();
+                String contractId = Contract.nextContractId();
+
+                Contract contract = Contract.issue(
+                    policyNo, contractId, sub.getProductName(),
+                    holder, finalPremium, sub.getCarNumber(),
+                    sub.getCoveragesDescription(), "", ""
+                );
+                contract.setSubscriptionNo(sub.getSubscriptionNo());
+                contract.save();
+
                 System.out.println("\n[인수 승인]");
-                System.out.println("계약번호(" + contractNo + ")의 인수가 승인되었습니다.");
+                System.out.println("계약번호(" + policyNo + ")의 인수가 승인되었습니다.");
                 break;
 
             case "2":
