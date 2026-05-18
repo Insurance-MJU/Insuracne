@@ -2,55 +2,129 @@ package infra.dao;
 
 import domain.*;
 import domain.common.Money;
-import infra.util.FileStore;
-import java.util.*;
-import java.util.stream.Collectors;
+import infra.persistence.Database;
+import infra.persistence.ResultSetExtractor;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.List;
 
 public class ClaimDao {
     private static final ClaimDao INSTANCE = new ClaimDao();
     public static ClaimDao getInstance() { return INSTANCE; }
 
-    private static final List<Claim> STORE;
-    static {
-        List<Claim> loaded = FileStore.load("claims.dat");
-        if (loaded != null) { STORE = loaded; }
-        else { STORE = new ArrayList<>(); initDefaults(); }
-    }
+    private static final Database DB = Database.getInstance();
 
-    private static void initDefaults() {
-        Accident accident = AccidentDao.getInstance().findById("ACC-2026-003");
-        Claim c = new Claim("CL-00001", accident, "이영희", "2026-04-18",
-                            "CNT-20231210-003", "차량 전손", ClaimStatus.PAYMENT_PENDING);
-        c.setAssignedEmployee("EMP-1023");
-        Money settlement = new Money(14_800_000, "KRW");
-        c.setDamageAssessment(new DamageAssessment(settlement, Deductible.none(), new Money(14_800_000, "KRW")));
-        STORE.add(c);
-        FileStore.save("claims.dat", STORE);
+    private static final ResultSetExtractor<Claim> EXTRACTOR = rs -> mapRow(rs);
+
+    private static Claim mapRow(ResultSet rs) throws SQLException {
+        Claim c = new Claim();
+        c.setClaimId(rs.getString("claim_id"));
+        c.setClaimantName(rs.getString("claimant_name"));
+        Timestamp claimTs = rs.getTimestamp("claim_date");
+        if (claimTs != null) c.setClaimDate(new java.util.Date(claimTs.getTime()));
+        c.setContractId(rs.getString("contract_id"));
+        c.setDescription(rs.getString("description"));
+        String statusStr = rs.getString("claim_status");
+        if (statusStr != null) c.setClaimStatus(ClaimStatus.valueOf(statusStr));
+        c.setAssignedEmployee(rs.getString("assigned_employee"));
+
+        // Reconstruct embedded Accident stub
+        String accidentId = rs.getString("accident_id");
+        if (accidentId != null) {
+            Accident acc = new Accident();
+            acc.setAccidentId(accidentId);
+            c.setAccident(acc);
+        }
+
+        // Reconstruct DamageAssessment
+        long settlementAmt = rs.getLong("settlement_amount");
+        long dedAmt = rs.getLong("deductible_amount");
+        long compAmt = rs.getLong("compensation_amount");
+        if (settlementAmt > 0 || compAmt > 0) {
+            c.setDamageAssessment(new DamageAssessment(
+                new Money(settlementAmt, "KRW"),
+                new Money(dedAmt, "KRW"),
+                new Money(compAmt, "KRW")));
+        }
+
+        // ClaimPayment
+        String bankName = rs.getString("bank_name");
+        String accountNo = rs.getString("account_number");
+        if (bankName != null && !bankName.isEmpty()) {
+            c.setClaimPayment(new ClaimPayment(bankName, accountNo));
+        }
+
+        return c;
     }
 
     public Claim findByAccidentId(String accidentId) {
-        return STORE.stream()
-            .filter(c -> c.getAccident() != null && accidentId.equals(c.getAccident().getAccidentId()))
-            .findFirst().orElse(null);
+        return DB.queryForObject(
+            "SELECT * FROM claims WHERE accident_id = ? LIMIT 1",
+            EXTRACTOR, accidentId);
     }
 
     public Claim findById(String claimId) {
-        return STORE.stream().filter(c -> c.getClaimId().equals(claimId)).findFirst().orElse(null);
+        return DB.queryForObject(
+            "SELECT * FROM claims WHERE claim_id = ?",
+            EXTRACTOR, claimId);
     }
 
     public List<Claim> findAwaitingPayment() {
-        return STORE.stream()
-            .filter(c -> c.getClaimStatus() == ClaimStatus.PAYMENT_PENDING)
-            .collect(Collectors.toList());
+        return DB.queryForList(
+            "SELECT * FROM claims WHERE claim_status = ?",
+            EXTRACTOR, ClaimStatus.PAYMENT_PENDING.name());
     }
 
     public void save(Claim c) {
-        STORE.removeIf(x -> x.getClaimId().equals(c.getClaimId()));
-        STORE.add(c);
-        FileStore.save("claims.dat", STORE);
+        String accidentId = (c.getAccident() != null) ? c.getAccident().getAccidentId() : null;
+        long settlementAmt = 0L;
+        long dedAmt = 0L;
+        long compAmt = 0L;
+        if (c.getDamageAssessment() != null) {
+            DamageAssessment da = c.getDamageAssessment();
+            settlementAmt = da.getSettlement() != null ? da.getSettlement().getAmount() : 0L;
+            dedAmt = da.getDeductibleAmount() != null ? da.getDeductibleAmount().getAmount() : 0L;
+            compAmt = da.getCompensationAmount() != null ? da.getCompensationAmount().getAmount() : 0L;
+        }
+        String bankName = c.getBankName();
+        String accountNo = c.getAccountNumber();
+
+        DB.execute(
+            "INSERT INTO claims (claim_id, accident_id, claimant_name, claim_date, contract_id," +
+            " description, claim_status, assigned_employee," +
+            " settlement_amount, deductible_amount, compensation_amount," +
+            " bank_name, account_number)" +
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+            " ON DUPLICATE KEY UPDATE" +
+            " accident_id=VALUES(accident_id), claimant_name=VALUES(claimant_name)," +
+            " claim_date=VALUES(claim_date), contract_id=VALUES(contract_id)," +
+            " description=VALUES(description), claim_status=VALUES(claim_status)," +
+            " assigned_employee=VALUES(assigned_employee), settlement_amount=VALUES(settlement_amount)," +
+            " deductible_amount=VALUES(deductible_amount)," +
+            " compensation_amount=VALUES(compensation_amount)," +
+            " bank_name=VALUES(bank_name), account_number=VALUES(account_number)",
+            c.getClaimId(),
+            accidentId,
+            c.getClaimantName(),
+            c.getClaimDate() != null ? new Timestamp(c.getClaimDate().getTime()) : null,
+            c.getContractId(),
+            c.getDescription(),
+            c.getClaimStatus() != null ? c.getClaimStatus().name() : null,
+            c.getAssignedEmployee(),
+            settlementAmt,
+            dedAmt,
+            compAmt,
+            bankName,
+            accountNo
+        );
     }
 
     public String nextId() {
-        return String.format("CL-%05d", STORE.size() + 1);
+        Integer count = DB.queryForObject(
+            "SELECT COUNT(*) FROM claims", rs -> rs.getInt(1));
+        int next = (count != null ? count : 0) + 1;
+        return String.format("CL-%05d", next);
     }
 }

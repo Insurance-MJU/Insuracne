@@ -81,9 +81,10 @@ public class Subscription implements Serializable {
 
     // ── DAO 위임 ──────────────────────────────────────────────
     public static String nextSubscriptionNo()                        { return infra.dao.SubscriptionDao.getInstance().nextSubscriptionNo(); }
-    public static java.util.List<Subscription> findAll()            { return infra.dao.SubscriptionDao.getInstance().findAll(); }
-    public static java.util.List<Subscription> findPendingReview()  { return infra.dao.SubscriptionDao.getInstance().findPendingReview(); }
-    public static Subscription findByNo(String subscriptionNo)      { return infra.dao.SubscriptionDao.getInstance().findByNo(subscriptionNo); }
+    public static java.util.List<Subscription> findAll()                        { return infra.dao.SubscriptionDao.getInstance().findAll(); }
+    public static java.util.List<Subscription> findPendingReview()              { return infra.dao.SubscriptionDao.getInstance().findPendingReview(); }
+    public static java.util.List<Subscription> findByApplicantName(String name) { return infra.dao.SubscriptionDao.getInstance().findByApplicantName(name); }
+    public static Subscription findByNo(String subscriptionNo)                  { return infra.dao.SubscriptionDao.getInstance().findByNo(subscriptionNo); }
     public static void save(Subscription s)                         { infra.dao.SubscriptionDao.getInstance().save(s); }
 
     // ── Setters ──────────────────────────────────────────────

@@ -4,9 +4,7 @@ import domain.*;
 import domain.common.Money;
 import infra.Context;
 import infra.external.IdentityVerificationService;
-import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class CS01ProductSubscription {
 
@@ -147,7 +145,6 @@ public class CS01ProductSubscription {
 
         // ── Step 9: Subscription 생성 및 저장 ────────────────
         String coveragesDesc = selectedProduct.getDefaultCoverageDescription();
-        String ridersDesc = buildRidersDescription(selectedProduct.getRiders());
         String today = new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
 
         Subscription subscription = Subscription.register(
@@ -164,46 +161,20 @@ public class CS01ProductSubscription {
         );
         Subscription.save(subscription);
 
-        // ── Step 10: Contract 생성 및 저장 ───────────────────
-        Party holder = new Party();
-        holder.setPartyId("PARTY-" + System.currentTimeMillis());
-        holder.setName(name);
-        holder.setPhone(phone);
-
-        Contract contract = Contract.issue(
-            Contract.nextPolicyNo(),
-            Contract.nextContractId(),
-            selectedProduct.getProductName(),
-            holder,
-            new Money(confirmedPremium, "KRW"),
-            car.getCarNumber(),
-            coveragesDesc,
-            "2,000만원",
-            ridersDesc
-        );
-        contract.save();
-
-        // ── Step 11: 완료 ─────────────────────────────────────
+        // ── Step 10: 완료 ────────────────────────────────────
         System.out.println("\n========================================");
-        System.out.println(" 보험가입이 완료되었습니다.");
+        System.out.println(" 청약이 완료되었습니다.");
+        System.out.println(" 심사 후 계약이 확정됩니다.");
         System.out.println("========================================");
         System.out.printf(" 청약번호    : %s%n", subscription.getSubscriptionNo());
-        System.out.printf(" 증권번호    : %s%n", contract.getPolicyNo());
         System.out.printf(" 상품명      : %s%n", selectedProduct.getProductName());
         System.out.printf(" 가입자      : %s%n", name);
         System.out.printf(" 전화번호    : %s%n", phone);
         System.out.printf(" 차량번호    : %s%n", car.getCarNumber());
         System.out.printf(" 운행용도    : %s%n", car.getPurposeLabel());
         System.out.printf(" 운전자범위  : %s%n", driverScope.getScopeLabel());
-        System.out.printf(" 보험료      : %,d원/년%n", confirmedPremium);
+        System.out.printf(" 보험료(예정): %,d원/년%n", confirmedPremium);
         returnToMenu();
-    }
-
-    private String buildRidersDescription(List<ProductRider> riders) {
-        if (riders == null || riders.isEmpty()) return "없음";
-        return riders.stream()
-            .map(ProductRider::getRiderName)
-            .collect(Collectors.joining(", "));
     }
 
     private void returnToMenu() {

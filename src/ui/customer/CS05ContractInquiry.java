@@ -1,6 +1,8 @@
 package ui.customer;
 
 import domain.Contract;
+import domain.Subscription;
+import domain.SubscriptionStatus;
 import infra.Context;
 import infra.external.IdentityVerificationService;
 import java.util.List;
@@ -40,6 +42,27 @@ public class CS05ContractInquiry {
         String statusChoice = sc.nextLine().trim();
         System.out.println("[조회]");
 
+        // ── 청약 현황 (승인 전) ──────────────────────────────
+        List<Subscription> subscriptions = Subscription.findByApplicantName(holderName).stream()
+            .filter(s -> s.getStatus() != SubscriptionStatus.APPROVED)
+            .collect(java.util.stream.Collectors.toList());
+
+        if (!subscriptions.isEmpty()) {
+            System.out.println("\n[청약 현황]");
+            System.out.println("------------------------------------------------------------");
+            System.out.printf(" %-20s %-25s %-14s %-12s %-10s%n",
+                "청약번호", "상품명", "보험료(예정)", "청약일자", "상태");
+            System.out.println("------------------------------------------------------------");
+            for (Subscription s : subscriptions) {
+                System.out.printf(" %-20s %-25s %,10d원  %-12s %-10s%n",
+                    s.getSubscriptionNo(), s.getProductName(),
+                    s.getPremium().getAmount(),
+                    s.getSubscriptionDateDisplay(), s.getStatus().getLabel());
+            }
+            System.out.println("------------------------------------------------------------");
+        }
+
+        // ── 확정 계약 목록 ────────────────────────────────────
         List<Contract> contracts = Contract.findByCondition(holderName, periodChoice, statusChoice);
 
         System.out.println("\n[보험 계약 목록]");

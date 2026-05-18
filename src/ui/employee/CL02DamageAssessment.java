@@ -143,10 +143,8 @@ public class CL02DamageAssessment {
             // Step 10: 레포지토리에 Claim 지급 정보 저장 및 상태 업데이트
             if (claim != null) {
                 Money settlementMoney = new Money(settlement * 10_000L, "KRW");
-                Deductible deductibleObj = deductible == 0
-                    ? Deductible.none()
-                    : Deductible.fixedAmount(new Money(deductible * 10_000L, "KRW"));
-                claim.assess(settlementMoney, deductibleObj);
+                Money deductibleMoney = new Money(deductible * 10_000L, "KRW");
+                claim.assess(settlementMoney, deductibleMoney);
                 claim.save();
             }
 

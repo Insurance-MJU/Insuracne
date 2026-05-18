@@ -2,138 +2,199 @@ package infra.dao;
 
 import domain.*;
 import domain.common.Money;
-import infra.util.FileStore;
-import java.text.SimpleDateFormat;
+import infra.persistence.Database;
+import infra.persistence.ResultSetExtractor;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
-import static domain.Deductible.fixedAmount;
-import static domain.Deductible.none;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ContractDao {
     private static final ContractDao INSTANCE = new ContractDao();
     public static ContractDao getInstance() { return INSTANCE; }
 
-    private static final List<Contract> STORE;
-    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
-    static {
-        List<Contract> loaded = FileStore.load("contracts.dat");
-        if (loaded != null) { STORE = loaded; }
-        else { STORE = new ArrayList<>(); initDefaults(); }
-    }
+    private static final Database DB = Database.getInstance();
 
-    private static void initDefaults() {
-        Contract c1 = buildContract("IN-2026-001", "CNT-20240315-001",
-            "MZ세대 다이렉트 개인용자동차보험",
-            ContractStatus.ACTIVE, "2026-04-01", "2026-04-01", "2027-04-01",
-            2_509_200L, "대인배상I, 대인배상II, 대물배상", "마일리지 특약",
-            "64마0866", "박수현");
-        c1.setSelectedCoverages(Arrays.asList(
-            cov("COV-001", "대인배상 I",   true,  none()),
-            cov("COV-002", "대인배상 II",  false, none()),
-            cov("COV-003", "대물배상",     false, none())
-        ));
-        STORE.add(c1);
+    private static final ResultSetExtractor<Contract> EXTRACTOR = rs -> mapRow(rs);
 
-        Contract c2 = buildContract("IN-2025-002", "CNT-20240520-002",
-            "MZ세대 다이렉트 개인용자동차보험",
-            ContractStatus.ACTIVE, "2025-06-15", "2025-06-15", "2026-06-15",
-            1_980_000L, "대인배상I, 대인배상II, 대물배상, 자기차량손해", "블랙박스 할인특약",
-            "12가3456", "김직원");
-        c2.setSelectedCoverages(Arrays.asList(
-            cov("COV-001", "대인배상 I",    true,  none()),
-            cov("COV-002", "대인배상 II",   false, none()),
-            cov("COV-003", "대물배상",      false, none()),
-            cov("COV-005", "자기차량손해",  false, fixedAmount(new Money(200_000L, "KRW")))
-        ));
-        STORE.add(c2);
-
-        Contract c3 = buildContract("IN-2023-003", "CNT-20231210-003",
-            "MZ세대 다이렉트 개인용자동차보험",
-            ContractStatus.EXPIRED, "2023-12-10", "2023-12-10", "2024-12-10",
-            2_100_000L, "대인배상I, 대물배상, 자기차량손해", "없음",
-            "56다9012", "이영희");
-        c3.setSelectedCoverages(Arrays.asList(
-            cov("COV-001", "대인배상 I",    true,  none()),
-            cov("COV-003", "대물배상",      false, none()),
-            cov("COV-005", "자기차량손해",  false, fixedAmount(new Money(200_000L, "KRW")))
-        ));
-        STORE.add(c3);
-
-        FileStore.save("contracts.dat", STORE);
-    }
-
-    private static SelectedCoverage cov(String masterId, String name, boolean mandatory, Deductible ded) {
-        SelectedCoverage sc = new SelectedCoverage();
-        sc.setCoverageMasterId(masterId);
-        sc.setCoverageName(name);
-        sc.setMandatory(mandatory);
-        sc.setDeductible(ded);
-        return sc;
-    }
-
-    private static Contract buildContract(String policyNo, String contractId, String productName,
-                                          ContractStatus status, String issueDate, String startDate,
-                                          String endDate, long premiumAmount, String coverages,
-                                          String riders, String carNumber, String holderName) {
-        Party holder = new Party();
-        holder.setPartyId("PARTY-" + contractId);
-        holder.setName(holderName);
+    private static Contract mapRow(ResultSet rs) throws SQLException {
         Contract c = new Contract();
-        c.setPolicyNo(policyNo);
-        c.setContractId(contractId);
-        c.setProductName(productName);
-        c.setStatus(status);
-        c.setPolicyholder(holder);
-        c.setPremium(new Money(premiumAmount, "KRW"));
-        c.setCarNumber(carNumber);
-        c.setCoveragesDescription(coverages);
-        c.setRidersDescription(riders);
-        try { c.setIssueDate(SDF.parse(issueDate)); c.setStartDate(SDF.parse(startDate)); c.setEndDate(SDF.parse(endDate)); } catch (Exception ignored) {}
+        c.setContractId(rs.getString("contract_id"));
+        c.setPolicyNo(rs.getString("policy_no"));
+        c.setProductName(rs.getString("product_name"));
+        c.setSubscriptionNo(rs.getString("subscription_no"));
+        c.setPremium(new Money(rs.getLong("premium"), "KRW"));
+        c.setCarNumber(rs.getString("car_number"));
+        c.setCoveragesDescription(rs.getString("coverages_description"));
+        c.setCoverageLimit(rs.getString("coverage_limit"));
+        c.setRidersDescription(rs.getString("riders_description"));
+        Timestamp issueTs = rs.getTimestamp("issue_date");
+        if (issueTs != null) c.setIssueDate(new java.util.Date(issueTs.getTime()));
+        Timestamp startTs = rs.getTimestamp("start_date");
+        if (startTs != null) c.setStartDate(new java.util.Date(startTs.getTime()));
+        Timestamp endTs = rs.getTimestamp("end_date");
+        if (endTs != null) c.setEndDate(new java.util.Date(endTs.getTime()));
+        String statusStr = rs.getString("status");
+        if (statusStr != null) c.setStatus(ContractStatus.valueOf(statusStr));
+        String holderName = rs.getString("holder_name");
+        String holderPartyId = rs.getString("holder_party_id");
+        if (holderName != null) {
+            Party holder = new Party();
+            holder.setName(holderName);
+            holder.setPartyId(holderPartyId);
+            c.setPolicyholder(holder);
+        }
         return c;
     }
 
-    public List<Contract> findAll() { return new ArrayList<>(STORE); }
+    private static final ResultSetExtractor<SelectedCoverage> SC_EXTRACTOR = rs -> {
+        SelectedCoverage sc = new SelectedCoverage();
+        sc.setCoverageMasterId(rs.getString("coverage_master_id"));
+        sc.setCoverageName(rs.getString("coverage_name"));
+        sc.setMandatory(rs.getInt("mandatory") == 1);
+        String dedType = rs.getString("deductible_type");
+        long dedAmt = rs.getLong("deductible_amount");
+        if ("FIXED".equals(dedType)) {
+            sc.setDeductible(Deductible.fixedAmount(new Money(dedAmt, "KRW")));
+        } else if ("RATE".equals(dedType)) {
+            sc.setDeductible(Deductible.rate((double) dedAmt / 100.0));
+        } else {
+            sc.setDeductible(Deductible.none());
+        }
+        return sc;
+    };
+
+    private List<SelectedCoverage> loadSelectedCoverages(String contractId) {
+        return DB.queryForList(
+            "SELECT * FROM contract_selected_coverages WHERE contract_id = ?",
+            SC_EXTRACTOR, contractId);
+    }
+
+    private Contract loadFull(Contract c) {
+        if (c != null) {
+            c.setSelectedCoverages(loadSelectedCoverages(c.getContractId()));
+        }
+        return c;
+    }
+
+    public List<Contract> findAll() {
+        List<Contract> list = DB.queryForList("SELECT * FROM contracts", EXTRACTOR);
+        list.forEach(this::loadFull);
+        return list;
+    }
 
     public Contract findByPolicyNo(String policyNo) {
-        return STORE.stream().filter(c -> c.getPolicyNo().equals(policyNo)).findFirst().orElse(null);
+        Contract c = DB.queryForObject(
+            "SELECT * FROM contracts WHERE policy_no = ?", EXTRACTOR, policyNo);
+        return loadFull(c);
     }
 
     public Contract findByContractId(String contractId) {
-        return STORE.stream().filter(c -> c.getContractId().equals(contractId)).findFirst().orElse(null);
+        Contract c = DB.queryForObject(
+            "SELECT * FROM contracts WHERE contract_id = ?", EXTRACTOR, contractId);
+        return loadFull(c);
     }
 
     public List<Contract> findByCondition(String holderName, String periodChoice, String statusChoice) {
-        String cutoff1 = LocalDate.now().minusYears(1).toString();
-        String cutoff3 = LocalDate.now().minusYears(3).toString();
-        return STORE.stream()
-            .filter(c -> holderName.isEmpty()
-                || (c.getPolicyholder() != null && holderName.equals(c.getPolicyholder().getName())))
-            .filter(c -> {
-                if ("2".equals(periodChoice)) return c.getIssueDateString().compareTo(cutoff1) >= 0;
-                if ("3".equals(periodChoice)) return c.getIssueDateString().compareTo(cutoff3) >= 0;
-                return true;
-            })
-            .filter(c -> {
-                if ("1".equals(statusChoice)) return c.getStatus() == ContractStatus.ACTIVE;
-                if ("2".equals(statusChoice)) return c.getStatus() == ContractStatus.EXPIRED;
-                if ("3".equals(statusChoice)) return c.getStatus() == ContractStatus.CANCELLED;
-                return true;
-            })
-            .collect(Collectors.toList());
+        StringBuilder sql = new StringBuilder("SELECT * FROM contracts WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (holderName != null && !holderName.isEmpty()) {
+            sql.append(" AND holder_name = ?");
+            params.add(holderName);
+        }
+        if ("2".equals(periodChoice)) {
+            sql.append(" AND issue_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)");
+        } else if ("3".equals(periodChoice)) {
+            sql.append(" AND issue_date >= DATE_SUB(NOW(), INTERVAL 3 YEAR)");
+        }
+        if ("1".equals(statusChoice)) {
+            sql.append(" AND status = 'ACTIVE'");
+        } else if ("2".equals(statusChoice)) {
+            sql.append(" AND status = 'EXPIRED'");
+        } else if ("3".equals(statusChoice)) {
+            sql.append(" AND status = 'CANCELLED'");
+        }
+
+        List<Contract> list = DB.queryForList(sql.toString(), EXTRACTOR, params.toArray());
+        list.forEach(this::loadFull);
+        return list;
     }
 
     public void save(Contract c) {
-        STORE.removeIf(x -> x.getContractId().equals(c.getContractId()));
-        STORE.add(c);
-        FileStore.save("contracts.dat", STORE);
+        String holderName = (c.getPolicyholder() != null) ? c.getPolicyholder().getName() : null;
+        String holderPartyId = (c.getPolicyholder() != null) ? c.getPolicyholder().getPartyId() : null;
+
+        DB.execute(
+            "INSERT INTO contracts (contract_id, policy_no, product_name, subscription_no, premium," +
+            " car_number, coverages_description, coverage_limit, riders_description," +
+            " issue_date, start_date, end_date, status, holder_name, holder_party_id)" +
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+            " ON DUPLICATE KEY UPDATE" +
+            " policy_no=VALUES(policy_no), product_name=VALUES(product_name)," +
+            " subscription_no=VALUES(subscription_no), premium=VALUES(premium)," +
+            " car_number=VALUES(car_number), coverages_description=VALUES(coverages_description)," +
+            " coverage_limit=VALUES(coverage_limit), riders_description=VALUES(riders_description)," +
+            " issue_date=VALUES(issue_date), start_date=VALUES(start_date), end_date=VALUES(end_date)," +
+            " status=VALUES(status), holder_name=VALUES(holder_name), holder_party_id=VALUES(holder_party_id)",
+            c.getContractId(),
+            c.getPolicyNo(),
+            c.getProductName(),
+            c.getSubscriptionNo(),
+            c.getPremium() != null ? c.getPremium().getAmount() : 0L,
+            c.getCarNumber(),
+            c.getCoveragesDescription(),
+            c.getCoverageLimit(),
+            c.getRidersDescription(),
+            c.getIssueDate() != null ? new Timestamp(c.getIssueDate().getTime()) : null,
+            c.getStartDate() != null ? new Timestamp(c.getStartDate().getTime()) : null,
+            c.getEndDate() != null ? new Timestamp(c.getEndDate().getTime()) : null,
+            c.getStatus() != null ? c.getStatus().name() : null,
+            holderName,
+            holderPartyId
+        );
+
+        // Save selected coverages: delete then reinsert
+        if (c.getSelectedCoverages() != null) {
+            DB.execute("DELETE FROM contract_selected_coverages WHERE contract_id = ?", c.getContractId());
+            for (SelectedCoverage sc : c.getSelectedCoverages()) {
+                String id = c.getContractId() + "-" + sc.getCoverageMasterId();
+                String dedType = "NONE";
+                long dedAmt = 0L;
+                if (sc.getDeductible() != null) {
+                    dedType = sc.getDeductible().getType().name();
+                    if (sc.getDeductible().getAmount() != null) {
+                        dedAmt = sc.getDeductible().getAmount().getAmount();
+                    } else if (sc.getDeductible().getRate() != null) {
+                        dedAmt = Math.round(sc.getDeductible().getRate() * 100);
+                    }
+                }
+                DB.execute(
+                    "INSERT INTO contract_selected_coverages" +
+                    " (id, contract_id, coverage_master_id, coverage_name, mandatory, deductible_type, deductible_amount)" +
+                    " VALUES (?,?,?,?,?,?,?)" +
+                    " ON DUPLICATE KEY UPDATE coverage_name=VALUES(coverage_name)," +
+                    " mandatory=VALUES(mandatory), deductible_type=VALUES(deductible_type)," +
+                    " deductible_amount=VALUES(deductible_amount)",
+                    id, c.getContractId(), sc.getCoverageMasterId(), sc.getCoverageName(),
+                    sc.isMandatory() ? 1 : 0, dedType, dedAmt
+                );
+            }
+        }
     }
 
     public String nextPolicyNo() {
-        return String.format("IN-2026-%03d", STORE.size() + 1);
+        Integer count = DB.queryForObject("SELECT COUNT(*) FROM contracts", rs -> rs.getInt(1));
+        int next = (count != null ? count : 0) + 1;
+        return String.format("IN-2026-%03d", next);
     }
 
     public String nextContractId() {
-        return String.format("CNT-%d-%03d", LocalDate.now().getYear(), STORE.size() + 1);
+        Integer count = DB.queryForObject("SELECT COUNT(*) FROM contracts", rs -> rs.getInt(1));
+        int next = (count != null ? count : 0) + 1;
+        return String.format("CNT-%d-%03d", LocalDate.now().getYear(), next);
     }
 }

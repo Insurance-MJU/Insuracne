@@ -2,21 +2,25 @@ package infra.dao;
 
 import domain.common.User;
 import domain.common.UserRole;
-import java.util.*;
+import infra.persistence.Database;
+import infra.persistence.ResultSetExtractor;
 
 public class UserDao {
     private static final UserDao INSTANCE = new UserDao();
     public static UserDao getInstance() { return INSTANCE; }
 
-    private static final Map<String, User> STORE = new HashMap<>();
-    static {
-        STORE.put("customer1", new User("customer1", "1234", "박수현", UserRole.CUSTOMER));
-        STORE.put("employee1", new User("employee1", "1234", "김직원", UserRole.EMPLOYEE));
-        STORE.put("admin1",    new User("admin1",    "1234", "이관리", UserRole.ADMIN));
-    }
+    private static final Database DB = Database.getInstance();
+
+    private static final ResultSetExtractor<User> EXTRACTOR = rs -> new User(
+        rs.getString("user_id"),
+        rs.getString("password"),
+        rs.getString("name"),
+        UserRole.valueOf(rs.getString("role"))
+    );
 
     public User findByCredentials(String userId, String password) {
-        User user = STORE.get(userId);
+        User user = DB.queryForObject(
+            "SELECT * FROM users WHERE user_id = ?", EXTRACTOR, userId);
         if (user != null && user.getPassword().equals(password)) return user;
         return null;
     }

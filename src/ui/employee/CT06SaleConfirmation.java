@@ -37,59 +37,24 @@ public class CT06SaleConfirmation {
         // ── Step 6: 판매 현황 출력 ────────────────────────────
         System.out.println("\n── 판매 현황 ───────────────────────────");
         System.out.printf(" 현재 상태 : %s%n", product.getStatusLabel());
-        System.out.println("\n[판매신청] [판매개시] [판매중단]");
 
-        // ── Step 7: [판매신청] 클릭 ───────────────────────────
-        System.out.print("\n[판매신청] (Enter): ");
-        sc.nextLine();
+        ProductStatus status = product.getStatus();
 
-        // ── Step 8: 서류 업로드 화면 ─────────────────────────
-        System.out.println("\n── 판매 확정 신청 서류 업로드 ──────────");
-        System.out.println(" (필수 서류를 모두 업로드하여야 합니다.)");
+        // 인가 완료(APPROVED) 상태만 판매신청 가능
+        if (status == ProductStatus.APPROVED) {
+            System.out.println("\n[판매신청] [판매중단]");
+            runSaleApplication(product);
 
-        List<ProductDocument> uploadedDocs = new ArrayList<>();
-        for (int i = 0; i < REQUIRED_DOCS.length; i++) {
-            System.out.printf("%n [%d] %s%n", i + 1, REQUIRED_DOCS[i]);
-            // E1: 필수 서류 누락 검사 — null 반환 시 재시도 강제
-            String path;
-            while (true) {
-                path = DocumentUploadHelper.inputFilePath(sc, REQUIRED_DOCS[i]);
-                if (path != null) break;
-                System.out.println("   [경고] 필수 서류입니다. 파일 경로를 입력해야 합니다.");
-            }
-            uploadedDocs.add(ProductDocument.create(
-                product.getProductId(), DOC_TYPES[i], REQUIRED_DOCS[i], path));
+        // 판매 개시 전(SALE_PENDING) 상태만 판매개시 가능
+        } else if (status == ProductStatus.SALE_PENDING) {
+            System.out.println("\n[판매개시] [판매중단]");
+            runSaleStart(product);
+
+        } else {
+            System.out.println("\n[안내] 현재 상태(" + product.getStatusLabel() + ")에서는 판매 확정을 진행할 수 없습니다.");
+            System.out.println("       상품 인가(CT-04) 완료 후 다시 시도하십시오.");
         }
 
-        // ── Step 9: [금융감독원 제출] 클릭 ───────────────────
-        System.out.print("\n[금융감독원 제출] (Enter): ");
-        sc.nextLine();
-
-        // E2: 금융감독원 서류 전송 실패 (mock - 항상 성공)
-        if (!fssClient.submitSaleNotification(product.getProductId())) {
-            System.out.println("[오류] 금융감독원으로 서류 제출을 실패했습니다. 다시 시도해주세요.");
-            returnToMenu(); return;
-        }
-
-        // ── Step 10: 제출 완료 ────────────────────────────────
-        product.addDocuments(uploadedDocs);
-        product.applySalePermit();
-        product.save();
-        System.out.println("\n[안내] 금융감독원으로 서류를 제출하였습니다.");
-
-        // ── Step 11: [판매개시] 클릭 ─────────────────────────
-        System.out.println("\n[안내] 금융감독원으로부터 판매 승인 후 [판매개시] 버튼을 누르십시오.");
-        System.out.print("[판매개시] (Enter): ");
-        sc.nextLine();
-
-        // A1/A2: 판매 승인 결과 (mock - 승인)
-        System.out.println("\n[금융감독원 판매 확정 승인: 승인]");
-        product.onsale();
-        product.save();
-
-        System.out.println("\n┌────────────────────────────────────────────┐");
-        System.out.println("│  상품 판매가 확정되었습니다. 판매를 개시합니다. │");
-        System.out.println("└────────────────────────────────────────────┘");
         returnToMenu();
     }
 
@@ -107,6 +72,63 @@ public class CT06SaleConfirmation {
             if (idx == 0) return null;
             return products.get(idx - 1);
         } catch (Exception e) { return null; }
+    }
+
+    // ── 판매신청: APPROVED → SALE_PENDING ────────────────────
+    private void runSaleApplication(Product product) {
+        System.out.print("\n[판매신청]을 진행하시겠습니까? (Y/N): ");
+        if (!sc.nextLine().trim().equalsIgnoreCase("Y")) {
+            System.out.println("[안내] 판매신청이 취소되었습니다.");
+            return;
+        }
+
+        // 문서 업로드
+        System.out.println("\n── 판매 신청 서류 업로드 ─────────────────");
+        List<ProductDocument> docs = new ArrayList<>();
+        for (int i = 0; i < REQUIRED_DOCS.length; i++) {
+            System.out.printf("[%d/%d] %s%n", i + 1, REQUIRED_DOCS.length, REQUIRED_DOCS[i]);
+            String path = DocumentUploadHelper.inputFilePath(sc, REQUIRED_DOCS[i]);
+            if (path != null) {
+                docs.add(ProductDocument.createSubmitted(
+                    product.getProductId(), DOC_TYPES[i], REQUIRED_DOCS[i], path));
+            }
+        }
+        product.addDocuments(docs);
+        product.save();
+
+        // FSS 신고
+        System.out.println("\n── 금융감독원 판매 신고 ─────────────────");
+        boolean submitted = fssClient.submitSaleNotification(product.getProductId());
+        if (!submitted) {
+            System.out.println("[오류] FSS 판매 신고 제출에 실패했습니다.");
+            return;
+        }
+        System.out.println("[안내] FSS 판매 신고가 접수되었습니다. 심사 결과를 확인합니다...");
+
+        FssClient.ReviewResult result = fssClient.getSaleReviewResult(product.getProductId());
+        System.out.printf(" FSS 심사 결과: %s%n", result.getLabel());
+
+        if (result == FssClient.ReviewResult.APPROVED) {
+            product.applySalePermit();
+            product.save();
+            System.out.println("\n[완료] 판매신청이 승인되었습니다. 상태: " + product.getStatusLabel());
+            System.out.println("       [판매개시] 메뉴(CT-06)를 통해 판매를 개시할 수 있습니다.");
+        } else {
+            System.out.println("[안내] FSS 심사 결과: " + result.getLabel() + " — 판매신청이 반려되었습니다.");
+        }
+    }
+
+    // ── 판매개시: SALE_PENDING → ON_SALE ─────────────────────
+    private void runSaleStart(Product product) {
+        System.out.print("\n[판매개시]를 진행하시겠습니까? (Y/N): ");
+        if (!sc.nextLine().trim().equalsIgnoreCase("Y")) {
+            System.out.println("[안내] 판매개시가 취소되었습니다.");
+            return;
+        }
+
+        product.onsale();
+        product.save();
+        System.out.println("\n[완료] 상품이 판매 개시되었습니다. 상태: " + product.getStatusLabel());
     }
 
     private void returnToMenu() {

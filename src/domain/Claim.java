@@ -37,10 +37,10 @@ public class Claim implements Serializable {
     public boolean updateStatus(ClaimStatus s) { this.claimStatus = s; return true; }
 
     /** 손해액 산정 완료: 합의금·자기부담금으로 보상금 계산 후 지급대기 상태로 전환 */
-    public void assess(Money settlement, Deductible deductible) {
-        long deductibleAmount = (deductible.getAmount() != null) ? deductible.getAmount().getAmount() : 0L;
-        Money compensation = new Money(settlement.getAmount() - deductibleAmount, "KRW");
-        this.damageAssessment = new DamageAssessment(settlement, deductible, compensation);
+    public void assess(Money settlement, Money deductibleAmount) {
+        long dedAmt = (deductibleAmount != null) ? deductibleAmount.getAmount() : 0L;
+        Money compensation = new Money(settlement.getAmount() - dedAmt, "KRW");
+        this.damageAssessment = new DamageAssessment(settlement, deductibleAmount, compensation);
         this.claimStatus = ClaimStatus.PAYMENT_PENDING;
     }
 

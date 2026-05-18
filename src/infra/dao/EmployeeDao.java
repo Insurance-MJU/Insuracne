@@ -1,30 +1,37 @@
 package infra.dao;
 
 import domain.Employee;
-import java.util.*;
-import java.util.stream.Collectors;
+import infra.persistence.Database;
+import infra.persistence.ResultSetExtractor;
+
+import java.util.List;
 
 public class EmployeeDao {
     private static final EmployeeDao INSTANCE = new EmployeeDao();
     public static EmployeeDao getInstance() { return INSTANCE; }
 
-    private static final List<Employee.FieldInvestigator> STORE = new ArrayList<>();
-    static {
-        STORE.add(new Employee.FieldInvestigator("EMP-1023", "이현수", "자동차 대물",  2));
-        STORE.add(new Employee.FieldInvestigator("EMP-1045", "박지영", "자동차 대물",  4));
-        STORE.add(new Employee.FieldInvestigator("EMP-1067", "최준호", "자기차량손해", 1));
-        STORE.add(new Employee.FieldInvestigator("EMP-1082", "정다은", "자동차 대물",  3));
-    }
+    private static final Database DB = Database.getInstance();
+
+    private static final ResultSetExtractor<Employee.FieldInvestigator> EXTRACTOR = rs ->
+        new Employee.FieldInvestigator(
+            rs.getString("employee_id"),
+            rs.getString("name"),
+            rs.getString("specialty"),
+            rs.getInt("open_case_count")
+        );
 
     public List<Employee.FieldInvestigator> findBySpecialty(String specialty) {
-        return STORE.stream()
-            .filter(e -> specialty.isEmpty() || e.getSpecialty().equals(specialty))
-            .collect(Collectors.toList());
+        if (specialty == null || specialty.isEmpty()) {
+            return DB.queryForList("SELECT * FROM employees", EXTRACTOR);
+        }
+        return DB.queryForList(
+            "SELECT * FROM employees WHERE specialty = ?",
+            EXTRACTOR, specialty);
     }
 
     public Employee.FieldInvestigator findById(String employeeId) {
-        return STORE.stream()
-            .filter(e -> e.getEmployeeId().equals(employeeId))
-            .findFirst().orElse(null);
+        return DB.queryForObject(
+            "SELECT * FROM employees WHERE employee_id = ?",
+            EXTRACTOR, employeeId);
     }
 }

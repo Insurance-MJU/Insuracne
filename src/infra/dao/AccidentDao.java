@@ -3,80 +3,126 @@ package infra.dao;
 import domain.Accident;
 import domain.AccidentStatus;
 import domain.common.Money;
-import infra.util.FileStore;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
+import infra.persistence.Database;
+import infra.persistence.ResultSetExtractor;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.List;
 
 public class AccidentDao {
     private static final AccidentDao INSTANCE = new AccidentDao();
     public static AccidentDao getInstance() { return INSTANCE; }
 
-    private static final List<Accident> STORE;
-    static {
-        List<Accident> loaded = FileStore.load("accidents.dat");
-        if (loaded != null) { STORE = loaded; }
-        else { STORE = new ArrayList<>(); initDefaults(); }
-    }
+    private static final Database DB = Database.getInstance();
 
-    private static void initDefaults() {
-        Accident a1 = new Accident("ACC-2026-001", "2026-04-19 09:32", "홍길동", "010-1234-5678",
-            "자동차 대물 사고", "서울 강남구 테헤란로", "신호 대기 중 후방 추돌 사고 발생",
-            "사고현장사진.jpg,차량수리견적서.pdf", "CNT-20240315-001", "자동차 대물",
-            new Money(20_000_000, "KRW"), "12가 3456 (현대 소나타)", AccidentStatus.PENDING);
-        a1.setPersonalInjuryLimit(new Money(10_000_000, "KRW"));
-        a1.setExpectedRepairCost(new Money(850_000, "KRW"));
-        a1.setRegionCode("SEOUL-01");
-        STORE.add(a1);
+    private static final ResultSetExtractor<Accident> EXTRACTOR = rs -> mapRow(rs);
 
-        Accident a2 = new Accident("ACC-2026-002", "2026-04-19 11:15", "김철수", "010-9876-5432",
-            "차량 파손", "경기도 수원시 팔달구", "주차장 내 차량 문 충돌로 인한 파손",
-            "차량파손사진.jpg,수리견적서.pdf", "CNT-20240520-002", "자기차량손해",
-            new Money(30_000_000, "KRW"), "34나 5678 (기아 K5)", AccidentStatus.PENDING);
-        a2.setPersonalInjuryLimit(new Money(20_000_000, "KRW"));
-        a2.setExpectedRepairCost(new Money(1_200_000, "KRW"));
-        a2.setRegionCode("GYEONGGI-01");
-        STORE.add(a2);
-
-        Accident a3 = new Accident("ACC-2026-003", "2026-04-18 14:20", "이영희", "010-5555-1234",
-            "차량 전손", "인천시 부평구 경인로", "교차로 신호 위반으로 인한 정면 충돌",
-            "사고사진.jpg,전손감정서.pdf", "CNT-20231210-003", "자기차량손해",
-            new Money(50_000_000, "KRW"), "56다 9012 (현대 그랜저)", AccidentStatus.IN_PROGRESS);
-        a3.setPersonalInjuryLimit(new Money(30_000_000, "KRW"));
-        a3.setExpectedRepairCost(new Money(3_500_000, "KRW"));
-        a3.setRegionCode("INCHEON-01");
-        STORE.add(a3);
-
-        FileStore.save("accidents.dat", STORE);
+    private static Accident mapRow(ResultSet rs) throws SQLException {
+        Accident a = new Accident();
+        a.setAccidentId(rs.getString("accident_id"));
+        Timestamp ts = rs.getTimestamp("accident_date");
+        if (ts != null) a.setAccidentDate(new java.util.Date(ts.getTime()));
+        a.setReportedBy(rs.getString("reported_by"));
+        a.setPhone(rs.getString("phone"));
+        a.setDescription(rs.getString("description"));
+        a.setAccidentLocation(rs.getString("accident_location"));
+        a.setAccidentDetail(rs.getString("accident_detail"));
+        a.setDocuments(rs.getString("documents"));
+        a.setContractId(rs.getString("contract_id"));
+        a.setCoverageDescription(rs.getString("coverage_description"));
+        a.setCoverageLimit(new Money(rs.getLong("coverage_limit"), "KRW"));
+        a.setPersonalInjuryLimit(new Money(rs.getLong("personal_injury_limit"), "KRW"));
+        a.setVehicleInfo(rs.getString("vehicle_info"));
+        a.setExpectedRepairCost(new Money(rs.getLong("expected_repair_cost"), "KRW"));
+        a.setRegionCode(rs.getString("region_code"));
+        String statusStr = rs.getString("status");
+        if (statusStr != null) a.setStatus(AccidentStatus.valueOf(statusStr));
+        return a;
     }
 
     public List<Accident> findByDateAndStatus(String date, String status) {
-        return STORE.stream()
-            .filter(a -> a.getAccidentDate() != null
-                && new SimpleDateFormat("yyyy-MM-dd").format(a.getAccidentDate()).startsWith(date))
-            .filter(a -> status.isEmpty() || (a.getStatus() != null && a.getStatus().getLabel().equals(status)))
-            .collect(Collectors.toList());
+        if (status == null || status.isEmpty()) {
+            return DB.queryForList(
+                "SELECT * FROM accidents WHERE DATE(accident_date) LIKE ?",
+                EXTRACTOR, date + "%");
+        }
+        // status parameter is the label - find by enum name matching label
+        // Try to match by enum name first
+        String enumName = resolveStatusEnumName(status);
+        if (enumName != null) {
+            return DB.queryForList(
+                "SELECT * FROM accidents WHERE DATE_FORMAT(accident_date,'%Y-%m-%d') LIKE ? AND status = ?",
+                EXTRACTOR, date + "%", enumName);
+        }
+        return DB.queryForList(
+            "SELECT * FROM accidents WHERE DATE_FORMAT(accident_date,'%Y-%m-%d') LIKE ?",
+            EXTRACTOR, date + "%");
+    }
+
+    private String resolveStatusEnumName(String label) {
+        for (AccidentStatus s : AccidentStatus.values()) {
+            if (s.getLabel().equals(label) || s.name().equals(label)) return s.name();
+        }
+        return null;
     }
 
     public List<Accident> findPendingAccidents() {
-        return STORE.stream().filter(a -> a.getStatus() == AccidentStatus.PENDING).collect(Collectors.toList());
+        return DB.queryForList(
+            "SELECT * FROM accidents WHERE status = ?",
+            EXTRACTOR, AccidentStatus.PENDING.name());
     }
 
     public Accident findById(String accidentId) {
-        return STORE.stream().filter(a -> a.getAccidentId().equals(accidentId)).findFirst().orElse(null);
+        return DB.queryForObject(
+            "SELECT * FROM accidents WHERE accident_id = ?",
+            EXTRACTOR, accidentId);
     }
 
     public Accident findByCustomerName(String name) {
-        return STORE.stream().filter(a -> a.getReportedBy().equals(name)).findFirst().orElse(null);
+        return DB.queryForObject(
+            "SELECT * FROM accidents WHERE reported_by = ? LIMIT 1",
+            EXTRACTOR, name);
     }
 
     public void save(Accident a) {
-        STORE.removeIf(x -> x.getAccidentId().equals(a.getAccidentId()));
-        STORE.add(a);
-        FileStore.save("accidents.dat", STORE);
+        DB.execute(
+            "INSERT INTO accidents (accident_id, accident_date, reported_by, phone, description," +
+            " accident_location, accident_detail, documents, contract_id, coverage_description," +
+            " coverage_limit, personal_injury_limit, vehicle_info, expected_repair_cost, region_code, status)" +
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+            " ON DUPLICATE KEY UPDATE" +
+            " accident_date=VALUES(accident_date), reported_by=VALUES(reported_by), phone=VALUES(phone)," +
+            " description=VALUES(description), accident_location=VALUES(accident_location)," +
+            " accident_detail=VALUES(accident_detail), documents=VALUES(documents)," +
+            " contract_id=VALUES(contract_id), coverage_description=VALUES(coverage_description)," +
+            " coverage_limit=VALUES(coverage_limit), personal_injury_limit=VALUES(personal_injury_limit)," +
+            " vehicle_info=VALUES(vehicle_info), expected_repair_cost=VALUES(expected_repair_cost)," +
+            " region_code=VALUES(region_code), status=VALUES(status)",
+            a.getAccidentId(),
+            a.getAccidentDate() != null ? new Timestamp(a.getAccidentDate().getTime()) : null,
+            a.getReportedBy(),
+            a.getPhone(),
+            a.getDescription(),
+            a.getAccidentLocation(),
+            a.getAccidentDetail(),
+            a.getDocuments(),
+            a.getContractId(),
+            a.getCoverageDescription(),
+            a.getCoverageLimit() != null ? a.getCoverageLimit().getAmount() : 0L,
+            a.getPersonalInjuryLimit() != null ? a.getPersonalInjuryLimit().getAmount() : 0L,
+            a.getVehicleInfo(),
+            a.getExpectedRepairCost() != null ? a.getExpectedRepairCost().getAmount() : 0L,
+            a.getRegionCode(),
+            a.getStatus() != null ? a.getStatus().name() : null
+        );
     }
 
     public String nextId() {
-        return String.format("ACC-2026-%03d", STORE.size() + 1);
+        Integer count = DB.queryForObject(
+            "SELECT COUNT(*) FROM accidents", rs -> rs.getInt(1));
+        int next = (count != null ? count : 0) + 1;
+        return String.format("ACC-2026-%03d", next);
     }
 }
