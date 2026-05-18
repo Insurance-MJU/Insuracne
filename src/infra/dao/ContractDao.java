@@ -55,15 +55,12 @@ public class ContractDao {
         sc.setCoverageMasterId(rs.getString("coverage_master_id"));
         sc.setCoverageName(rs.getString("coverage_name"));
         sc.setMandatory(rs.getInt("mandatory") == 1);
-        String dedType = rs.getString("deductible_type");
+        String dedTypeStr = rs.getString("deductible_type");
         long dedAmt = rs.getLong("deductible_amount");
-        if ("FIXED".equals(dedType)) {
-            sc.setDeductible(Deductible.fixedAmount(new Money(dedAmt, "KRW")));
-        } else if ("RATE".equals(dedType)) {
-            sc.setDeductible(Deductible.rate((double) dedAmt / 100.0));
-        } else {
-            sc.setDeductible(Deductible.none());
+        if (dedTypeStr != null) {
+            sc.setDeductibleType(Deductible.DeductibleType.valueOf(dedTypeStr));
         }
+        sc.setDeductibleAmount(new Money(dedAmt, "KRW"));
         return sc;
     };
 
@@ -162,16 +159,10 @@ public class ContractDao {
             DB.execute("DELETE FROM contract_selected_coverages WHERE contract_id = ?", c.getContractId());
             for (SelectedCoverage sc : c.getSelectedCoverages()) {
                 String id = c.getContractId() + "-" + sc.getCoverageMasterId();
-                String dedType = "NONE";
-                long dedAmt = 0L;
-                if (sc.getDeductible() != null) {
-                    dedType = sc.getDeductible().getType().name();
-                    if (sc.getDeductible().getAmount() != null) {
-                        dedAmt = sc.getDeductible().getAmount().getAmount();
-                    } else if (sc.getDeductible().getRate() != null) {
-                        dedAmt = Math.round(sc.getDeductible().getRate() * 100);
-                    }
-                }
+                String dedType = sc.getDeductibleType() != null
+                    ? sc.getDeductibleType().name() : "NONE";
+                long dedAmt = sc.getDeductibleAmount() != null
+                    ? sc.getDeductibleAmount().getAmount() : 0L;
                 DB.execute(
                     "INSERT INTO contract_selected_coverages" +
                     " (id, contract_id, coverage_master_id, coverage_name, mandatory, deductible_type, deductible_amount)" +

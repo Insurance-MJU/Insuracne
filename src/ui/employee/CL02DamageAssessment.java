@@ -3,7 +3,6 @@ package ui.employee;
 import domain.Accident;
 import domain.Claim;
 import domain.Contract;
-import domain.Deductible;
 import domain.SelectedCoverage;
 import domain.common.Money;
 import infra.Context;
@@ -76,8 +75,8 @@ public class CL02DamageAssessment {
             long contractDeductible = 0L;
             if (contract != null && contract.getSelectedCoverages() != null) {
                 for (SelectedCoverage sc : contract.getSelectedCoverages()) {
-                    if (sc.getDeductible() != null && sc.getDeductible().getAmount() != null)
-                        contractDeductible += sc.getDeductible().getAmount().getAmount();
+                    if (sc.getDeductibleAmount() != null)
+                        contractDeductible += sc.getDeductibleAmount().getAmount();
                 }
             }
 
@@ -88,8 +87,8 @@ public class CL02DamageAssessment {
             if (contract != null && contract.getSelectedCoverages() != null) {
                 System.out.println("  가입 담보 :");
                 for (SelectedCoverage sc : contract.getSelectedCoverages()) {
-                    String dedStr = (sc.getDeductible() != null && sc.getDeductible().getAmount() != null)
-                        ? "  자기부담금 " + sc.getDeductible().getAmount().getAmount() / 10_000 + "만원"
+                    String dedStr = (sc.getDeductibleAmount() != null && sc.getDeductibleAmount().getAmount() > 0)
+                        ? "  자기부담금 " + sc.getDeductibleAmount().getAmount() / 10_000 + "만원"
                         : "";
                     System.out.println("    - " + sc.getCoverageName() + dedStr);
                 }

@@ -9,23 +9,26 @@ public class SelectedCoverage implements Serializable {
     private String coverageMasterId;
     private String coverageName;
     private CoverageType coverageType;
-    private Deductible deductible;
+    private Deductible.DeductibleType deductibleType;
+    private Money deductibleAmount;
     private Money limitAmount;
     private boolean mandatory;
 
-    public Money getBasePremium()         { return basePremium; }
-    public String getCoverageMasterId()   { return coverageMasterId; }
-    public String getCoverageName()       { return coverageName; }
-    public CoverageType getCoverageType() { return coverageType; }
-    public Deductible getDeductible()     { return deductible; }
-    public Money getLimitAmount()         { return limitAmount; }
-    public boolean isMandatory()          { return mandatory; }
+    public Money getBasePremium()                       { return basePremium; }
+    public String getCoverageMasterId()                 { return coverageMasterId; }
+    public String getCoverageName()                     { return coverageName; }
+    public CoverageType getCoverageType()               { return coverageType; }
+    public Deductible.DeductibleType getDeductibleType(){ return deductibleType; }
+    public Money getDeductibleAmount()                  { return deductibleAmount; }
+    public Money getLimitAmount()                       { return limitAmount; }
+    public boolean isMandatory()                        { return mandatory; }
 
-    public void setBasePremium(Money v)         { this.basePremium = v; }
-    public void setCoverageMasterId(String v)   { this.coverageMasterId = v; }
-    public void setCoverageName(String v)       { this.coverageName = v; }
-    public void setCoverageType(CoverageType v) { this.coverageType = v; }
-    public void setDeductible(Deductible v)     { this.deductible = v; }
-    public void setLimitAmount(Money v)         { this.limitAmount = v; }
-    public void setMandatory(boolean v)         { this.mandatory = v; }
+    public void setBasePremium(Money v)                          { this.basePremium = v; }
+    public void setCoverageMasterId(String v)                    { this.coverageMasterId = v; }
+    public void setCoverageName(String v)                        { this.coverageName = v; }
+    public void setCoverageType(CoverageType v)                  { this.coverageType = v; }
+    public void setDeductibleType(Deductible.DeductibleType v)   { this.deductibleType = v; }
+    public void setDeductibleAmount(Money v)                     { this.deductibleAmount = v; }
+    public void setLimitAmount(Money v)                          { this.limitAmount = v; }
+    public void setMandatory(boolean v)                          { this.mandatory = v; }
 }
