@@ -1,6 +1,7 @@
 package domain;
 
 import domain.common.Money;
+import domain.exception.ValidationException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -32,6 +33,15 @@ public class Subscription implements Serializable {
             String productName, Money premium, Money basePremium,
             String subscriptionDate, String occupation, int age,
             String coveragesDescription) {
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        if (applicantName == null || applicantName.isBlank()) errors.add("신청자 이름은 필수입니다");
+        if (ssn == null || ssn.isBlank())                     errors.add("주민등록번호는 필수입니다");
+        if (carNumber == null || carNumber.isBlank())         errors.add("차량번호는 필수입니다");
+        if (productName == null || productName.isBlank())     errors.add("상품명은 필수입니다");
+        if (premium == null || premium.getAmount() <= 0)      errors.add("보험료는 0보다 커야 합니다");
+        if (age < 18)                                         errors.add("가입 가능 연령은 18세 이상입니다");
+        if (!errors.isEmpty()) throw new ValidationException(errors);
+
         Subscription s = new Subscription();
         s.subscriptionNo       = subscriptionNo;
         s.applicantName        = applicantName;
@@ -70,10 +80,18 @@ public class Subscription implements Serializable {
     }
 
     // ── DAO 위임 ──────────────────────────────────────────────
+    public static String nextSubscriptionNo()                        { return infra.dao.SubscriptionDao.getInstance().nextSubscriptionNo(); }
     public static java.util.List<Subscription> findAll()            { return infra.dao.SubscriptionDao.getInstance().findAll(); }
     public static java.util.List<Subscription> findPendingReview()  { return infra.dao.SubscriptionDao.getInstance().findPendingReview(); }
     public static Subscription findByNo(String subscriptionNo)      { return infra.dao.SubscriptionDao.getInstance().findByNo(subscriptionNo); }
     public static void save(Subscription s)                         { infra.dao.SubscriptionDao.getInstance().save(s); }
+
+    // ── Setters ──────────────────────────────────────────────
+    public void setSubscriptionNo(String v)      { this.subscriptionNo = v; }
+    public void setApplicantName(String v)        { this.applicantName = v; }
+    public void setSsn(String v)                  { this.ssn = v; }
+    public void setCarNumber(String v)            { this.carNumber = v; }
+    public void setBasePremium(Money v)           { this.basePremium = v; }
 
     // ── Getters ───────────────────────────────────────────────
     public String getSubscriptionNo()       { return subscriptionNo; }

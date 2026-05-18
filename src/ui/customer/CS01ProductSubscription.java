@@ -3,6 +3,7 @@ package ui.customer;
 import domain.*;
 import domain.common.Money;
 import infra.Context;
+import infra.external.IdentityVerificationService;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -23,13 +24,12 @@ public class CS01ProductSubscription {
             return;
         }
 
-        // ── Step 1: 본인 확인 ────────────────────────────────
-        System.out.println("\n[본인 확인]");
-        System.out.print(" 이름: ");
-        String name = sc.nextLine().trim();
-
-        System.out.print(" 주민등록번호 (예: 020101-3******): ");
-        String ssn = sc.nextLine().trim();
+        // ── Step 1: 본인 인증 (외부 시스템) ─────────────────
+        IdentityVerificationService.AuthResult auth =
+            new IdentityVerificationService(sc).verify();
+        String name  = auth.name;
+        String ssn   = auth.ssn;
+        String phone = auth.phone;
 
         // E1: 나이 조건 검사 (PERSONAL → 만 20~39세)
         if (selectedProduct.getTarget() == Target.PERSONAL) {
@@ -40,9 +40,6 @@ public class CS01ProductSubscription {
                 return;
             }
         }
-
-        System.out.print(" 전화번호 (예: 010-1234-5678): ");
-        String phone = sc.nextLine().trim();
 
         System.out.println("\n[개인정보 처리 동의]");
         System.out.println(" (필수) 개인정보 수집·이용 동의");
@@ -148,15 +145,30 @@ public class CS01ProductSubscription {
             return;
         }
 
-        // ── Step 9: Contract 생성 및 저장 ────────────────────
+        // ── Step 9: Subscription 생성 및 저장 ────────────────
+        String coveragesDesc = selectedProduct.getDefaultCoverageDescription();
+        String ridersDesc = buildRidersDescription(selectedProduct.getRiders());
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
+
+        Subscription subscription = Subscription.register(
+            Subscription.nextSubscriptionNo(),
+            name, ssn,
+            "",                                  // 주소 (CS01에서 미수집)
+            car.getCarNumber(), "",              // 차대번호 (CS01에서 미수집)
+            selectedProduct.getProductName(),
+            new Money(confirmedPremium, "KRW"),
+            new Money(confirmedPremium, "KRW"),
+            today, "",                           // 직업 (CS01에서 미수집)
+            driverAge < 0 ? 20 : driverAge,
+            coveragesDesc
+        );
+        Subscription.save(subscription);
+
+        // ── Step 10: Contract 생성 및 저장 ───────────────────
         Party holder = new Party();
         holder.setPartyId("PARTY-" + System.currentTimeMillis());
         holder.setName(name);
         holder.setPhone(phone);
-
-        // WARN-1: 담보·특약 정보를 하드코딩 대신 선택 상품에서 가져옴
-        String coveragesDesc = selectedProduct.getDefaultCoverageDescription();
-        String ridersDesc = buildRidersDescription(selectedProduct.getRiders());
 
         Contract contract = Contract.issue(
             Contract.nextPolicyNo(),
@@ -171,10 +183,11 @@ public class CS01ProductSubscription {
         );
         contract.save();
 
-        // ── Step 10: 완료 ─────────────────────────────────────
+        // ── Step 11: 완료 ─────────────────────────────────────
         System.out.println("\n========================================");
         System.out.println(" 보험가입이 완료되었습니다.");
         System.out.println("========================================");
+        System.out.printf(" 청약번호    : %s%n", subscription.getSubscriptionNo());
         System.out.printf(" 증권번호    : %s%n", contract.getPolicyNo());
         System.out.printf(" 상품명      : %s%n", selectedProduct.getProductName());
         System.out.printf(" 가입자      : %s%n", name);

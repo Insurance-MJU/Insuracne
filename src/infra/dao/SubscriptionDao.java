@@ -39,6 +39,14 @@ public class SubscriptionDao {
         return STORE.stream().filter(s -> s.getSubscriptionNo().equals(subscriptionNo)).findFirst().orElse(null);
     }
 
+    public String nextSubscriptionNo() {
+        String today = new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date());
+        long seq = STORE.stream()
+            .filter(s -> s.getSubscriptionNo().startsWith(today + "-"))
+            .count() + 1;
+        return String.format("%s-%04d", today, seq);
+    }
+
     public void save(Subscription s) {
         STORE.removeIf(x -> x.getSubscriptionNo().equals(s.getSubscriptionNo()));
         STORE.add(s);

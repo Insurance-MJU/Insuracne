@@ -1,6 +1,7 @@
 package domain;
 
 import domain.common.Money;
+import domain.exception.ValidationException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -34,6 +35,15 @@ public class Contract implements Serializable {
                                   Party holder, Money premium, String carNumber,
                                   String coveragesDescription, String coverageLimit,
                                   String ridersDescription) {
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        if (policyNo == null || policyNo.isBlank())       errors.add("증권번호는 필수입니다");
+        if (contractId == null || contractId.isBlank())   errors.add("계약ID는 필수입니다");
+        if (productName == null || productName.isBlank()) errors.add("상품명은 필수입니다");
+        if (holder == null)                               errors.add("계약자 정보는 필수입니다");
+        if (premium == null || premium.getAmount() <= 0)  errors.add("보험료는 0보다 커야 합니다");
+        if (carNumber == null || carNumber.isBlank())     errors.add("차량번호는 필수입니다");
+        if (!errors.isEmpty()) throw new ValidationException(errors);
+
         Contract c = new Contract();
         c.policyNo             = policyNo;
         c.contractId           = contractId;

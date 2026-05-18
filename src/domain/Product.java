@@ -1,5 +1,6 @@
 package domain;
 
+import domain.exception.ValidationException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,6 +26,16 @@ public class Product implements Serializable {
     // ── 정적 팩토리: 신규 상품 설계 ──────────────────────────
     public static Product design(String productCode, String productName, String description,
                                   Target target, Date saleStart, Date saleEnd) {
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        if (productCode == null || productCode.isBlank())  errors.add("상품코드는 필수입니다");
+        if (productName == null || productName.isBlank())  errors.add("상품명은 필수입니다");
+        if (target == null)                                errors.add("가입대상은 필수입니다");
+        if (saleStart == null)                             errors.add("판매시작일은 필수입니다");
+        if (saleEnd == null)                               errors.add("판매종료일은 필수입니다");
+        if (saleStart != null && saleEnd != null && !saleStart.before(saleEnd))
+                                                           errors.add("판매종료일은 시작일 이후여야 합니다");
+        if (!errors.isEmpty()) throw new ValidationException(errors);
+
         Product p = new Product();
         p.productId      = "PROD-" + System.currentTimeMillis();
         p.productCode    = productCode;
@@ -74,7 +85,12 @@ public class Product implements Serializable {
         return afterStart && beforeEnd;
     }
 
-    public String getStatusLabel()      { return status != null ? status.getLabel() : ""; }
+    public String getStatusLabel() {
+        if (status == ProductStatus.ON_SALE && !isOnSale()) {
+            this.status = ProductStatus.SALE_EXPIRED;
+        }
+        return status != null ? status.getLabel() : "";
+    }
     public String getTargetDescription(){ return target != null ? target.getDescription() : ""; }
     public String getLobLabel() {
         if (lineOfBusiness == LineOfBusiness.AUTO && target != null)

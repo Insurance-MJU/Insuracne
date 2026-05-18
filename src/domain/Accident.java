@@ -1,6 +1,7 @@
 package domain;
 
 import domain.common.Money;
+import domain.exception.ValidationException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -52,6 +53,14 @@ public class Accident implements Serializable {
                                    String accidentDate, String accidentLocation,
                                    String accidentDetail, String documents,
                                    Contract contract) {
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        if (reportedBy == null || reportedBy.isBlank())         errors.add("신고자 이름은 필수입니다");
+        if (phone == null || phone.isBlank())                   errors.add("연락처는 필수입니다");
+        if (accidentDate == null || accidentDate.isBlank())     errors.add("사고일시는 필수입니다");
+        if (accidentLocation == null || accidentLocation.isBlank()) errors.add("사고장소는 필수입니다");
+        if (contract == null)                                   errors.add("계약 정보는 필수입니다");
+        if (!errors.isEmpty()) throw new ValidationException(errors);
+
         Accident a = new Accident();
         a.accidentId          = accidentId;
         a.reportedBy          = reportedBy;

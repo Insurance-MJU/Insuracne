@@ -24,11 +24,12 @@ public class UW02RiskAnalysis {
         System.out.print(" 차량번호: ");
         String carNo = sc.nextLine().trim();
 
-        Subscription tempSub = Subscription.register(
-            "STANDALONE", name, ssn, "", carNo, "",
-            "", new Money(0L, "KRW"), new Money(0L, "KRW"),
-            "", "", 0, ""
-        );
+        Subscription tempSub = new Subscription();
+        tempSub.setSubscriptionNo("STANDALONE");
+        tempSub.setApplicantName(name);
+        tempSub.setSsn(ssn);
+        tempSub.setCarNumber(carNo);
+        tempSub.setBasePremium(new Money(0L, "KRW"));
         runAsInclude(tempSub);
 
         System.out.print("\nEnter를 누르면 메인 메뉴로 돌아갑니다...");
