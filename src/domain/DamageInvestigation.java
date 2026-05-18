@@ -16,6 +16,7 @@ public class DamageInvestigation implements Serializable {
     private double liabilityRatio;
 
     private String accidentId;
+    private String claimId;
     private DamageAssessment assessment;
     private String opinion;
     private String damageCode;
@@ -69,6 +70,7 @@ public class DamageInvestigation implements Serializable {
     public String getInvestigatorName() { return investigatorName; }
     public double getLiabilityRatio() { return liabilityRatio; }
     public String getAccidentId()           { return accidentId; }
+    public String getClaimId()              { return claimId; }
     public DamageAssessment getAssessment() { return assessment; }
     public String getOpinion()              { return opinion; }
     public String getDamageCode() { return damageCode; }
@@ -89,7 +91,8 @@ public class DamageInvestigation implements Serializable {
     public void setInvestigationId(String v) { this.investigationId = v; }
     public void setInvestigationResult(String v) { this.investigationResult = v; }
     public void setInvestigatorName(String v) { this.investigatorName = v; }
-    public void setAccidentId(String v)        { this.accidentId = v; }
+    public void setAccidentId(String v)           { this.accidentId = v; }
+    public void setClaimId(String v)              { this.claimId = v; }
     public void setAssessment(DamageAssessment v) { this.assessment = v; }
     public void setOpinion(String v)           { this.opinion = v; }
     public void setDamageCode(String v) { this.damageCode = v; }

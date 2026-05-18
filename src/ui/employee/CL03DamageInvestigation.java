@@ -2,6 +2,7 @@ package ui.employee;
 
 import domain.Accident;
 import domain.AccidentStatus;
+import domain.Claim;
 import domain.DamageInvestigation;
 import domain.InjuryGrade;
 import domain.common.Money;
@@ -147,6 +148,8 @@ public class CL03DamageInvestigation {
                 ourFault, otherFault, liability,
                 expectedRepairCostMoney, compensationLimitMoney, finalOpinion
             );
+            Claim linkedClaim = Claim.findByAccidentId(accNo);
+            if (linkedClaim != null) inv.setClaimId(linkedClaim.getClaimId());
             inv.save();
             if (accident != null) { accident.setStatus(AccidentStatus.IN_PROGRESS); accident.save(); }
 

@@ -43,7 +43,8 @@ public class ClaimDao {
         long dedAmt = rs.getLong("deductible_amount");
         long compAmt = rs.getLong("compensation_amount");
         if (settlementAmt > 0 || compAmt > 0) {
-            c.setDamageAssessment(new DamageAssessment(
+            if (c.getDamageInvestigation() == null) c.setDamageInvestigation(new DamageInvestigation());
+            c.getDamageInvestigation().setAssessment(new DamageAssessment(
                 new Money(settlementAmt, "KRW"),
                 new Money(dedAmt, "KRW"),
                 new Money(compAmt, "KRW")));
@@ -54,7 +55,11 @@ public class ClaimDao {
         String accountNo = rs.getString("account_number");
         if (bankName != null && !bankName.isEmpty()) {
             DamageAssessment da = c.getDamageAssessment();
-            if (da == null) { da = new DamageAssessment(); c.setDamageAssessment(da); }
+            if (da == null) {
+                if (c.getDamageInvestigation() == null) c.setDamageInvestigation(new DamageInvestigation());
+                da = new DamageAssessment();
+                c.getDamageInvestigation().setAssessment(da);
+            }
             da.setClaimPayment(new ClaimPayment(bankName, accountNo));
         }
 

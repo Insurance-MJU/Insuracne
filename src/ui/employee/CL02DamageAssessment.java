@@ -147,7 +147,7 @@ public class CL02DamageAssessment {
                 claim.assess(settlementMoney, deductibleMoney);
                 DamageInvestigation inv = DamageInvestigation.findByAccidentId(accNo);
                 if (inv != null && claim.getDamageAssessment() != null) {
-                    claim.getDamageAssessment().setInvestigation(inv);
+                    claim.setDamageInvestigation(inv);
                 }
                 claim.save();
             }

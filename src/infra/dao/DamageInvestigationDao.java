@@ -1,6 +1,5 @@
 package infra.dao;
 
-import domain.Claim;
 import domain.DamageInvestigation;
 import domain.InjuryGrade;
 import domain.common.Money;
@@ -39,14 +38,7 @@ public class DamageInvestigationDao {
         Timestamp savedTs = rs.getTimestamp("saved_at");
         if (savedTs != null) inv.setSavedAt(new java.util.Date(savedTs.getTime()));
 
-        // Reconstruct Claim stub
-        String claimId = rs.getString("claim_id");
-        if (claimId != null) {
-            Claim claim = new Claim();
-            claim.setClaimId(claimId);
-            inv.setClaim(claim);
-        }
-
+        inv.setClaimId(rs.getString("claim_id"));
         return inv;
     }
 
@@ -57,7 +49,7 @@ public class DamageInvestigationDao {
             invId = "INV-" + inv.getAccidentId();
             inv.setInvestigationId(invId);
         }
-        String claimId = (inv.getClaim() != null) ? inv.getClaim().getClaimId() : null;
+        String claimId = inv.getClaimId();
 
         DB.execute(
             "INSERT INTO damage_investigations" +
